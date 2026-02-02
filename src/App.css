@@ -1,0 +1,308 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600&display=swap');
+
+:root {
+    --theme-yellow: #ffc107;
+    --theme-yellow-dim: rgba(255, 193, 7, 0.2);
+    --bg-main: #121214;
+    --bg-panel: #1e1e20;
+    --bg-element: #2a2a2d;
+    --text-primary: #e0e0e0;
+    --text-secondary: #888888;
+    --border-tech: #444;
+
+    /* 切角路径 */
+    --clip-panel: polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%);
+    --clip-btn: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+}
+
+/* === 全局重置 === */
+* { box-sizing: border-box; }
+
+/* 彻底去除点击白边 */
+*:focus { outline: none !important; }
+button:focus { outline: none !important; }
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    font-family: 'Inter', system-ui, sans-serif;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden; /* 禁止整个网页滚动 */
+    /* 背景纹理 */
+    background-image: radial-gradient(circle at 50% 50%, #222 1px, transparent 1px);
+    background-size: 30px 30px;
+}
+
+/* === 布局：强制 4:6 === */
+.app-layout {
+    display: grid;
+    /* 使用 calc 精确计算宽度，减去中间的 gap (20px)
+       40% - 10px (左侧) | 60% - 10px (右侧)
+       min-width: 0 防止内容撑破 Grid
+    */
+    grid-template-columns: minmax(0, calc(40% - 10px)) minmax(0, calc(60% - 10px));
+    gap: 20px;
+
+    /* 高度精确控制：100vh 减去上下 padding (20px * 2 = 40px) */
+    height: calc(100vh - 40px);
+    margin: 20px; /* 等同于 padding */
+
+    width: calc(100vw - 40px); /* 宽度也要减去 margin */
+}
+
+/* === 面板框架 === */
+.tech-panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-tech);
+    height: 100%; /* 占满 Grid 给的高度 */
+    display: flex;
+    flex-direction: column; /* 垂直布局 */
+    position: relative;
+    clip-path: var(--clip-panel);
+    overflow: hidden; /* 防止圆角溢出 */
+}
+
+/* 顶部装饰线 */
+.tech-panel::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 3px;
+    background: var(--theme-yellow);
+    z-index: 10;
+}
+
+/* === 面板内部区域划分 === */
+
+/* 1. 头部 (固定不滚动) */
+.panel-header-area {
+    padding: 20px 24px 15px 24px;
+    background: var(--bg-panel);
+    border-bottom: 1px solid #2a2a2a;
+    flex-shrink: 0; /* 禁止被压缩 */
+}
+
+/* 2. 中间内容区 (负责滚动) */
+.panel-scroll-content {
+    flex: 1; /* 占满剩余所有高度 */
+    overflow-y: auto; /* 开启滚动 */
+    padding: 20px 24px;
+
+    /* 核心修复：防止 Grid 撑爆 */
+    min-height: 0;
+}
+
+/* 3. 底部区域 (左侧固定 Reset 按钮) */
+.panel-footer-area {
+    padding: 20px 24px;
+    background: var(--bg-panel);
+    border-top: 1px solid #333;
+    flex-shrink: 0; /* 禁止被压缩 */
+}
+
+
+/* === 关键修复：强制底部留白 === */
+/* 使用伪元素在滚动内容的最后面撑开一个透明块 */
+.panel-scroll-content::after {
+    content: "";
+    display: block;
+    height: 60px; /* 强制留白高度 */
+    width: 100%;
+    flex-shrink: 0;
+}
+
+
+/* === 滚动条美化 === */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--theme-yellow); }
+
+
+/* === 组件细节样式 === */
+
+/* 左侧标题 */
+.sidebar-panel h1 {
+    margin: 0; font-size: 1.8em; color: var(--theme-yellow);
+    font-family: 'JetBrains Mono', monospace; text-transform: uppercase;
+}
+.tech-decoration {
+    font-family: 'JetBrains Mono'; font-size: 0.7em; color: #666; margin-top: 5px; letter-spacing: 1px;
+}
+
+/* 筛选按钮区 */
+.filter-section { margin-bottom: 5px; }
+.section-title {
+    font-family: 'JetBrains Mono'; color: #888; margin: 15px 0 10px 0; font-size: 0.9em;
+    display: flex; align-items: center;
+}
+.title-icon {
+    background: var(--theme-yellow); color: black; padding: 1px 6px; margin-right: 8px; font-weight: bold; font-size: 0.8em;
+}
+
+.button-grid {
+    display: grid;
+    /* 按钮自适应：最小 100px */
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+}
+
+.tech-btn {
+    background: var(--bg-element);
+    border: 1px solid var(--border-tech);
+    color: var(--text-primary);
+    padding: 12px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono';
+    clip-path: var(--clip-btn);
+    transition: all 0.2s;
+    font-size: 0.9em;
+    text-align: center;
+}
+.tech-btn:hover:not(:disabled) {
+    border-color: var(--theme-yellow);
+    background: rgba(255, 193, 7, 0.1);
+}
+.tech-btn.active {
+    background: var(--theme-yellow); color: black; font-weight: bold;
+    border-color: var(--theme-yellow);
+    box-shadow: 0 0 10px rgba(255, 193, 7, 0.2);
+}
+.tech-btn:disabled { opacity: 0.3; cursor: not-allowed; border-style: dashed; }
+.tech-btn.muted { opacity: 0.3; }
+
+.filter-separator {
+    height: 1px; background: #333; margin: 25px 0; position: relative;
+}
+
+/* 重置按钮 */
+.reset-btn {
+    width: 100%;
+    background: transparent;
+    color: var(--theme-yellow);
+    border: 1px solid var(--theme-yellow);
+    padding: 14px;
+    font-family: 'JetBrains Mono';
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    clip-path: var(--clip-btn);
+    font-size: 1em;
+}
+.reset-btn:hover {
+    background: var(--theme-yellow);
+    color: black;
+}
+.reset-btn:active {
+    transform: translateY(1px);
+}
+
+/* 右侧内容 */
+.placeholder-state, .no-data-state {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    height: 100%; color: #666; text-align: center;
+}
+.scanner-line {
+    width: 60px; height: 3px; background: var(--theme-yellow); margin-bottom: 20px;
+}
+
+/* 内部卡片 */
+.inner-card {
+    background: rgba(0,0,0,0.2);
+    border: 1px solid #333;
+    margin-bottom: 25px;
+}
+.inner-header {
+    background: #252528;
+    padding: 12px 20px;
+    font-family: 'JetBrains Mono';
+    font-weight: bold;
+    border-bottom: 1px solid #333;
+    color: #ddd;
+    display: flex; justify-content: space-between;
+}
+.inner-body { padding: 20px; }
+.result-count { color: var(--theme-yellow); }
+
+/* 位置结果 */
+.location-results { display: flex; gap: 12px; flex-wrap: wrap; }
+.location-highlight {
+    background: var(--theme-yellow); color: black;
+    padding: 12px 20px;
+    clip-path: var(--clip-btn);
+    min-width: 140px;
+}
+.loc-name { font-weight: bold; font-size: 1.2em; display: block; }
+.loc-count { font-size: 0.8em; font-family: 'JetBrains Mono'; opacity: 0.8; }
+
+/* 表格 */
+.table-container { overflow-x: auto; }
+.tech-table {
+    width: 100%; border-collapse: collapse; font-size: 0.95em;
+    white-space: nowrap; /* 强制不换行 */
+}
+.tech-table th {
+    text-align: left; padding: 14px;
+    color: #888; font-weight: normal;
+    border-bottom: 1px solid #444;
+    font-family: 'JetBrains Mono';
+    /* 表头吸顶 */
+    position: sticky; top: 0; background: #252528; z-index: 5;
+}
+.tech-table td {
+    padding: 14px; border-bottom: 1px solid #333;
+}
+/* === 新增：角色标签样式 (Tag) === */
+.role-tag-container {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.role-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 0.8em;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-secondary);
+    border: 1px solid #444;
+    background: rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    transition: all 0.2s;
+
+    /* 关键：复用右下角切角样式 */
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%);
+
+    /* 禁止文字被选中，提升按钮感 */
+    user-select: none;
+}
+
+.role-tag:hover {
+    color: var(--text-primary);
+    border-color: var(--theme-yellow);
+    background: rgba(255, 193, 7, 0.1);
+}
+
+/* 选中状态（高亮） */
+.role-tag.active {
+    background: var(--theme-yellow);
+    color: black;
+    border-color: var(--theme-yellow);
+    font-weight: bold;
+}
+.font-bold { font-weight: bold; color: white; }
+.attr-extra { color: var(--theme-yellow); }
+.attr-skill { color: #52c41a; }
+.badge { padding: 3px 8px; border-radius: 2px; font-size: 0.85em; }
+.badge.star-六 { background: #ff4d4f; color: white; }
+.badge.star-五 { background: var(--theme-yellow); color: black; }
+.badge.star-四 { background: #1890ff; color: white; }
+tr.star-六 { background: rgba(255, 77, 79, 0.05); }
+
+/* 动画 */
+.fade-in { animation: fadeIn 0.3s ease-in; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
