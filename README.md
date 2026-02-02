@@ -12,8 +12,6 @@
 
 **[点击访问在线终端](https://gujiaming0813.github.io/endfield-tool/)**
 
-*(如果链接无法访问，请确保 GitHub Pages 已在仓库设置中开启)*
-
 ---
 
 ## 📖 项目简介 (Introduction)
