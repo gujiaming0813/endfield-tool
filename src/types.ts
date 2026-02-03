@@ -30,3 +30,12 @@ export interface LocationStat {
 }
 
 export type LocationKey = 'loc_hub' | 'loc_lab' | 'loc_mine' | 'loc_energy' | 'loc_city';
+
+// 信用商店
+export interface TradeItem {
+    id: string;
+    name: string;
+    price: number;      // 信用点价格
+    stamina: number;    // 等效体力值
+    note: string;       // 新增：备注信息
+}
