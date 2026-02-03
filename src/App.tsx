@@ -485,6 +485,7 @@ function App() {
         <div className="app-root">
             <header className="app-header">
                 <div className="logo-area">
+                    <img src="logo.svg" alt="logo" style={{ width: '32px', height: '32px' }} />
                     <div className="logo-text">ENDFIELD</div>
                     <div className="logo-sub">TOOLS</div>
                 </div>
