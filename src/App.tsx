@@ -32,10 +32,14 @@ const getStarMode = (rawStar: string) => {
 // 页面 1: 基质检索
 // ==========================================
 function MatrixTool() {
+    // 侧边栏筛选状态
     const [basicSelections, setBasicSelections] = useState<string[]>([]);
     const [selectedExtra, setSelectedExtra] = useState<string>('');
     const [selectedSkill, setSelectedSkill] = useState<string>('');
     const [selectedRole, setSelectedRole] = useState<string>('');
+
+    // 地区筛选状态 (null 代表“自动选择最佳”，不再代表“全部”)
+    const [selectedLocation, setSelectedLocation] = useState<LocationKey | null>(null);
 
     const options = useMemo(() => {
         return {
@@ -46,16 +50,18 @@ function MatrixTool() {
         };
     }, []);
 
+    // === 筛选操作处理 (每次变动都重置地区为自动选择) ===
     const handleRoleSelect = (value: string) => {
         setSelectedRole(prev => prev === value ? '' : value);
+        setSelectedLocation(null);
     };
 
     const handleBasicToggle = (value: string) => {
         setBasicSelections(prev => {
-            if (prev.includes(value)) return prev.filter(item => item !== value);
-            if (prev.length < 3) return [...prev, value];
-            return prev;
+            const newVal = prev.includes(value) ? prev.filter(item => item !== value) : (prev.length < 3 ? [...prev, value] : prev);
+            return newVal;
         });
+        setSelectedLocation(null);
     };
 
     const handleExtraSelect = (value: string) => {
@@ -65,6 +71,7 @@ function MatrixTool() {
             setSelectedExtra(value);
             setSelectedSkill('');
         }
+        setSelectedLocation(null);
     };
 
     const handleSkillSelect = (value: string) => {
@@ -74,6 +81,12 @@ function MatrixTool() {
             setSelectedSkill(value);
             setSelectedExtra('');
         }
+        setSelectedLocation(null);
+    };
+
+    // 点击地区切换 (强制选中，不再Toggle)
+    const handleLocationSelect = (key: LocationKey) => {
+        setSelectedLocation(key);
     };
 
     const handleReset = () => {
@@ -81,15 +94,18 @@ function MatrixTool() {
         setSelectedExtra('');
         setSelectedSkill('');
         setSelectedRole('');
+        setSelectedLocation(null);
     };
 
+    // === 核心计算逻辑 ===
     const result = useMemo(() => {
+        // 1. 筛选出所有符合条件的武器 (Global Pool)
         const hasRole = selectedRole !== '';
         const hasAnyAttribute = basicSelections.length > 0 || selectedExtra !== '' || selectedSkill !== '';
 
         if (!hasRole && !hasAnyAttribute) return null;
 
-        const matchedWeapons = weaponItems.filter(item => {
+        const globalMatchedWeapons = weaponItems.filter(item => {
             if (hasRole) {
                 if (!item.roleList || item.roleList.length === 0) return false;
                 if (!item.roleList.includes(selectedRole)) return false;
@@ -103,11 +119,44 @@ function MatrixTool() {
             return basicMatch && otherMatch;
         });
 
-        if (matchedWeapons.length === 0) {
-            return { empty: true, matchedWeapons: [], bestLocations: [] };
+        if (globalMatchedWeapons.length === 0) {
+            return { empty: true, displayWeapons: [], validLocations: [], activeLocation: null };
         }
 
-        matchedWeapons.sort((a, b) => {
+        // 2. 统计各地区掉落数量
+        const keys = Object.keys(LOCATION_MAP) as LocationKey[];
+        const locationStats: LocationStat[] = keys.map(key => {
+            return {
+                key: key,
+                name: LOCATION_MAP[key],
+                count: globalMatchedWeapons.reduce((sum, item) => sum + item[key], 0)
+            };
+        });
+
+        // 3. 过滤并排序 (倒序排列：最多的在最前)
+        const validLocations = locationStats
+            .filter(l => l.count > 0)
+            .sort((a, b) => b.count - a.count);
+
+        // 4. 确定当前生效的地区 (Active Location)
+        // 逻辑：如果用户手动选了，且该地区有效，则用用户的；否则默认用第一个(最多的)
+        let activeLocation = selectedLocation;
+        const bestLocation = validLocations.length > 0 ? (validLocations[0].key as LocationKey) : null;
+
+        const isActiveValid = activeLocation && validLocations.find(l => l.key === activeLocation);
+
+        if (!activeLocation || !isActiveValid) {
+            activeLocation = bestLocation;
+        }
+
+        // 5. 根据 Active Location 过滤展示列表
+        let displayWeapons = globalMatchedWeapons;
+        if (activeLocation) {
+            displayWeapons = globalMatchedWeapons.filter(item => item[activeLocation!] === 1);
+        }
+
+        // 6. 列表排序 (星级高 -> 低)
+        displayWeapons.sort((a, b) => {
             const hasRoleA = a.roleList.length > 0;
             const hasRoleB = b.roleList.length > 0;
             if (hasRoleA && !hasRoleB) return -1;
@@ -117,21 +166,14 @@ function MatrixTool() {
             return weightB - weightA;
         });
 
-        const keys = Object.keys(LOCATION_MAP) as LocationKey[];
-        const locationStats: LocationStat[] = keys.map(key => {
-            return {
-                key: key,
-                name: LOCATION_MAP[key],
-                count: matchedWeapons.reduce((sum, item) => sum + item[key], 0)
-            };
-        });
-
-        locationStats.sort((a, b) => b.count - a.count);
-        const maxCount = locationStats[0].count;
-        const bestLocations = locationStats.filter(l => l.count === maxCount && l.count > 0);
-
-        return { empty: false, matchedWeapons, bestLocations };
-    }, [basicSelections, selectedExtra, selectedSkill, selectedRole]);
+        return {
+            empty: false,
+            displayWeapons,
+            validLocations,
+            activeLocation, // 告诉 UI 到底哪个被选中了
+            totalMatchCount: globalMatchedWeapons.length
+        };
+    }, [basicSelections, selectedExtra, selectedSkill, selectedRole, selectedLocation]);
 
     const hasResults = result && !result.empty;
 
@@ -214,27 +256,41 @@ function MatrixTool() {
                     {hasResults && (
                         <div className="results-container fade-in">
                             <div className="inner-card recommendation">
-                                <div className="inner-header">最佳刷取点定位 // OPTIMAL LOCATION</div>
+                                <div className="inner-header">区域掉落分布 // DROP LOCATIONS</div>
                                 <div className="inner-body">
-                                    {result!.bestLocations.length > 0 ? (
-                                        <div className="location-results">
-                                            {result!.bestLocations.map(loc => (
-                                                <div key={loc.key} className="location-highlight">
+                                    <div className="location-results">
+                                        {/* 渲染地区列表 (已经按数量倒序排列) */}
+                                        {result!.validLocations.map(loc => {
+                                            // 判断是否为当前激活的地区
+                                            const isActive = result!.activeLocation === loc.key;
+
+                                            return (
+                                                <div
+                                                    key={loc.key}
+                                                    className={`location-highlight ${isActive ? 'active' : ''}`}
+                                                    onClick={() => handleLocationSelect(loc.key as LocationKey)}
+                                                >
                                                     <span className="loc-name">{loc.name}</span>
-                                                    <span className="loc-count">匹配数: {loc.count}</span>
+                                                    <span className="loc-count">
+                                                        命中: {loc.count} / {result!.totalMatchCount}
+                                                    </span>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <p>当前组合暂无掉落数据</p>
-                                    )}
+                                            );
+                                        })}
+                                    </div>
+                                    <p style={{marginTop: '15px', fontSize: '0.8em', color: '#666'}}>
+                                        * 系统已为您自动选中命中数最多的区域，点击上方卡片可切换查看。
+                                    </p>
                                 </div>
                             </div>
 
                             <div className="inner-card weapons-list">
                                 <div className="inner-header">
                                     检索结果 // SEARCH RESULTS
-                                    <span className="result-count">[{result!.matchedWeapons.length}]</span>
+                                    <span className="result-count">
+                                        [{result!.displayWeapons.length}
+                                        {result!.activeLocation ? ` @ ${LOCATION_MAP[result!.activeLocation]}` : ''}]
+                                    </span>
                                 </div>
                                 <div className="table-container">
                                     <table className="tech-table">
@@ -249,7 +305,7 @@ function MatrixTool() {
                                         </tr>
                                         </thead>
                                         <tbody>
-                                        {result!.matchedWeapons.map((weapon, idx) => {
+                                        {result!.displayWeapons.map((weapon, idx) => {
                                             const starMode = getStarMode(weapon.star);
                                             return (
                                                 <tr key={idx} className={`star-${starMode}`}>
@@ -298,12 +354,9 @@ function AboutPage() {
     return (
         <div className="about-layout">
             <div className="about-card fade-in">
-                {/* 1. 标题 */}
                 <div className="card-header">
                     <h2>关于本工具 // ABOUT</h2>
                 </div>
-
-                {/* 2. 内容区域 */}
                 <div className="card-scroll-body">
                     <p>
                         本工具是专为《明日方舟：终末地》设计的数据查询辅助终端。<br />
@@ -316,10 +369,7 @@ function AboutPage() {
                     </div>
 
                     <div className="tool-section">
-                        <h3>
-                            基质刷取检索工具
-                            <span className="version-tag">v1.0.0</span>
-                        </h3>
+                        <h3>基质刷取检索工具 <span className="version-tag">v1.0.0</span></h3>
                         <ul className="tech-list">
                             <li><strong>数据来源</strong>：<a href="https://space.bilibili.com/329400340" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--theme-yellow)', textDecoration: 'underline', cursor: 'pointer' }}>b站：皇战萌新轲</a></li>
                             <li><strong>核心功能</strong>：支持多属性交集筛选与角色反向检索。</li>
@@ -327,10 +377,7 @@ function AboutPage() {
                     </div>
 
                     <div className="tool-section">
-                        <h3>
-                            信用商店性价比工具
-                            <span className="version-tag">v1.0.0</span>
-                        </h3>
+                        <h3>信用商店性价比工具 <span className="version-tag">v1.0.0</span></h3>
                         <ul className="tech-list">
                             <li><strong>数据来源</strong>：<a href="https://bbs.nga.cn/nuke.php?func=ucp&uid=41796691" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--theme-yellow)', textDecoration: 'underline', cursor: 'pointer' }}>NGA：2235hhh</a></li>
                             <li><strong>核心功能</strong>：信用商店性价比查询。</li>
@@ -390,12 +437,9 @@ function TradeTool() {
     return (
         <div className="about-layout">
             <div className="about-card fade-in">
-                {/* 1. 标题 */}
                 <div className="card-header">
                     <h2>信用商店性价比 // PROCUREMENT</h2>
                 </div>
-
-                {/* 2. 内容区域 */}
                 <div className="card-scroll-body">
                     <div className="tool-section" style={{marginBottom: 0}}>
                         <p style={{fontSize:'0.9em', color:'#888', marginTop: 0}}>* 性价比 = 等效体力 / 信用点价格 (数值越高越划算)</p>
@@ -434,9 +478,6 @@ function TradeTool() {
     );
 }
 
-// ==========================================
-// 主应用容器
-// ==========================================
 function App() {
     const [activePage, setActivePage] = useState<'matrix' | 'about'| 'trade'>('matrix');
 
