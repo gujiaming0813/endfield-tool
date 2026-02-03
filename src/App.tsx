@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import './App.css';
 import rawData from './data/matrix_data.json';
 import tradeData from './data/trade_data.json';
-import type {AppData, LocationStat, LocationKey, TradeItem} from './types';
+import type { AppData, LocationStat, LocationKey, TradeItem } from './types';
 
 const appData = rawData as unknown as AppData;
 const weaponItems = appData.items;
@@ -21,7 +21,6 @@ const STAR_WEIGHT: Record<string, number> = {
     '四': 4, '4': 4
 };
 
-// --- 辅助函数 ---
 const getStarMode = (rawStar: string) => {
     const s = String(rawStar).trim();
     if (s === '六' || s === '6') return '六';
@@ -30,7 +29,7 @@ const getStarMode = (rawStar: string) => {
 };
 
 // ==========================================
-// 子页面 1: 基质筛选工具 (Matrix Tool)
+// 页面 1: 基质检索
 // ==========================================
 function MatrixTool() {
     const [basicSelections, setBasicSelections] = useState<string[]>([]);
@@ -134,12 +133,13 @@ function MatrixTool() {
         return { empty: false, matchedWeapons, bestLocations };
     }, [basicSelections, selectedExtra, selectedSkill, selectedRole]);
 
+    const hasResults = result && !result.empty;
+
     return (
-        <div className="app-layout">
-            {/* 左侧筛选面板 */}
+        <div className="app-layout fade-in">
             <aside className="tech-panel sidebar-panel">
                 <div className="panel-header-area">
-                    <h1>基质筛选终端</h1>
+                    <h1>基质检索终端</h1>
                     <div className="tech-decoration">/// ENDFIELD INDUSTRY ///</div>
                 </div>
 
@@ -195,9 +195,8 @@ function MatrixTool() {
                 </div>
             </aside>
 
-            {/* 右侧结果面板 */}
             <main className="tech-panel content-panel">
-                <div className="panel-scroll-content results-wrapper">
+                <div className={`panel-scroll-content results-wrapper ${hasResults ? 'has-results' : ''}`}>
                     {!result && (
                         <div className="placeholder-state">
                             <div className="scanner-line"></div>
@@ -212,14 +211,14 @@ function MatrixTool() {
                         </div>
                     )}
 
-                    {result && !result.empty && (
+                    {hasResults && (
                         <div className="results-container fade-in">
                             <div className="inner-card recommendation">
                                 <div className="inner-header">最佳刷取点定位 // OPTIMAL LOCATION</div>
                                 <div className="inner-body">
-                                    {result.bestLocations.length > 0 ? (
+                                    {result!.bestLocations.length > 0 ? (
                                         <div className="location-results">
-                                            {result.bestLocations.map(loc => (
+                                            {result!.bestLocations.map(loc => (
                                                 <div key={loc.key} className="location-highlight">
                                                     <span className="loc-name">{loc.name}</span>
                                                     <span className="loc-count">匹配数: {loc.count}</span>
@@ -235,7 +234,7 @@ function MatrixTool() {
                             <div className="inner-card weapons-list">
                                 <div className="inner-header">
                                     检索结果 // SEARCH RESULTS
-                                    <span className="result-count">[{result.matchedWeapons.length}]</span>
+                                    <span className="result-count">[{result!.matchedWeapons.length}]</span>
                                 </div>
                                 <div className="table-container">
                                     <table className="tech-table">
@@ -250,7 +249,7 @@ function MatrixTool() {
                                         </tr>
                                         </thead>
                                         <tbody>
-                                        {result.matchedWeapons.map((weapon, idx) => {
+                                        {result!.matchedWeapons.map((weapon, idx) => {
                                             const starMode = getStarMode(weapon.star);
                                             return (
                                                 <tr key={idx} className={`star-${starMode}`}>
@@ -293,72 +292,54 @@ function MatrixTool() {
 }
 
 // ==========================================
-// 子页面 2: 关于页面 (示例)
+// 页面 2: 关于页面
 // ==========================================
 function AboutPage() {
     return (
         <div className="about-layout">
             <div className="about-card fade-in">
-                <h2>关于本工具 // ABOUT</h2>
-                <p>
-                    本工具是专为《明日方舟：终末地》设计的数据查询辅助终端。<br />
-                    本工具旨在帮助管理员快速查询各种数据。
-                </p>
-
-                <div className="privacy-badge">
-                    <span className="shield-icon">🛡️</span>
-                    隐私声明：本工具为纯前端应用，无后端数据采集
+                {/* 1. 标题 */}
+                <div className="card-header">
+                    <h2>关于本工具 // ABOUT</h2>
                 </div>
 
-                {/* === 工具板块 1 === */}
-                <div className="tool-section">
-                    <h3>
-                        基质刷取检索工具
-                        <span className="version-tag">v1.0.0</span>
-                    </h3>
+                {/* 2. 内容区域 */}
+                <div className="card-scroll-body">
+                    <p>
+                        本工具是专为《明日方舟：终末地》设计的数据查询辅助终端。<br />
+                        本工具旨在帮助管理员快速查询各种数据。
+                    </p>
 
-                    <ul className="tech-list">
-                        <li>
-                            <strong>数据来源</strong>：
-                            <a
-                                href="https://space.bilibili.com/329400340"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{ color: 'var(--theme-yellow)', textDecoration: 'underline', cursor: 'pointer' }}
-                            >
-                                b站：皇战萌新轲
-                            </a>
-                        </li>
-                        <li><strong>核心功能</strong>：支持多属性交集筛选与角色反向检索。</li>
-                    </ul>
-                </div>
+                    <div className="privacy-badge">
+                        <span className="shield-icon">🛡️</span>
+                        隐私声明：本工具为纯前端应用，无后端数据采集
+                    </div>
 
-                <div className="tool-section">
-                    <h3>
-                        信用商店性价比工具
-                        <span className="version-tag">v1.0.0</span>
-                    </h3>
+                    <div className="tool-section">
+                        <h3>
+                            基质刷取检索工具
+                            <span className="version-tag">v1.0.0</span>
+                        </h3>
+                        <ul className="tech-list">
+                            <li><strong>数据来源</strong>：<a href="https://space.bilibili.com/329400340" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--theme-yellow)', textDecoration: 'underline', cursor: 'pointer' }}>b站：皇战萌新轲</a></li>
+                            <li><strong>核心功能</strong>：支持多属性交集筛选与角色反向检索。</li>
+                        </ul>
+                    </div>
 
-                    <ul className="tech-list">
-                        <li>
-                            <strong>数据来源</strong>：
-                            <a
-                                href="https://bbs.nga.cn/nuke.php?func=ucp&uid=41796691"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{ color: 'var(--theme-yellow)', textDecoration: 'underline', cursor: 'pointer' }}
-                            >
-                                NGA：2235hhh
-                            </a>
-                        </li>
-                        <li><strong>核心功能</strong>：信用商店性价比查询。</li>
-                    </ul>
-                </div>
+                    <div className="tool-section">
+                        <h3>
+                            信用商店性价比工具
+                            <span className="version-tag">v1.0.0</span>
+                        </h3>
+                        <ul className="tech-list">
+                            <li><strong>数据来源</strong>：<a href="https://bbs.nga.cn/nuke.php?func=ucp&uid=41796691" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--theme-yellow)', textDecoration: 'underline', cursor: 'pointer' }}>NGA：2235hhh</a></li>
+                            <li><strong>核心功能</strong>：信用商店性价比查询。</li>
+                        </ul>
+                    </div>
 
-                {/* 预留：未来可以在这里复制上面的 <div className="tool-section"> 添加第二个工具 */}
-
-                <div style={{marginTop: '40px', borderTop: '1px solid #333', paddingTop: '20px', fontSize: '0.9em', color: '#666'}}>
-                    /// ENDFIELD INDUSTRIES PROPERTY /// UNAUTHORIZED ACCESS PROHIBITED
+                    <div style={{marginTop: '40px', borderTop: '1px solid #333', paddingTop: '20px', fontSize: '0.9em', color: '#666'}}>
+                        /// ENDFIELD INDUSTRIES PROPERTY /// UNAUTHORIZED ACCESS PROHIBITED
+                    </div>
                 </div>
             </div>
         </div>
@@ -366,7 +347,7 @@ function AboutPage() {
 }
 
 // ==========================================
-// 子页面 3: 信用商店
+// 页面 3: 信用商店
 // ==========================================
 type SortKey = 'price' | 'stamina' | 'efficiency';
 type SortOrder = 'asc' | 'desc';
@@ -376,7 +357,6 @@ function TradeTool() {
     const [sortKey, setSortKey] = useState<SortKey>('efficiency');
     const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
-    // 计算性价比 (效率 = 体力 / 价格)，越高越好
     const getEfficiency = (item: TradeItem) => {
         if (item.price === 0) return 0;
         return item.stamina / item.price;
@@ -384,10 +364,8 @@ function TradeTool() {
 
     const handleSort = (key: SortKey) => {
         if (sortKey === key) {
-            // 切换排序顺序
             setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
         } else {
-            // 切换排序字段 (默认降序)
             setSortKey(key);
             setSortOrder('desc');
         }
@@ -395,20 +373,10 @@ function TradeTool() {
 
     const sortedItems = useMemo(() => {
         return [...items].sort((a, b) => {
-            let valA = 0;
-            let valB = 0;
-
-            if (sortKey === 'price') {
-                valA = a.price;
-                valB = b.price;
-            } else if (sortKey === 'stamina') {
-                valA = a.stamina;
-                valB = b.stamina;
-            } else if (sortKey === 'efficiency') {
-                valA = getEfficiency(a);
-                valB = getEfficiency(b);
-            }
-
+            let valA = 0; let valB = 0;
+            if (sortKey === 'price') { valA = a.price; valB = b.price; }
+            else if (sortKey === 'stamina') { valA = a.stamina; valB = b.stamina; }
+            else if (sortKey === 'efficiency') { valA = getEfficiency(a); valB = getEfficiency(b); }
             if (sortOrder === 'asc') return valA - valB;
             return valB - valA;
         });
@@ -420,71 +388,45 @@ function TradeTool() {
     };
 
     return (
-        <div className="about-layout" style={{ justifyContent: 'flex-start', flexDirection: 'column', alignItems: 'center' }}>
-            <div className="about-card fade-in" style={{ width: '100%', maxWidth: '1000px' }}>
-                <h2>信用商店性价比 // PROCUREMENT</h2>
+        <div className="about-layout">
+            <div className="about-card fade-in">
+                {/* 1. 标题 */}
+                <div className="card-header">
+                    <h2>信用商店性价比 // PROCUREMENT</h2>
+                </div>
 
-                <div className="tool-section">
-                    <h3>
-                        信用点兑换分析
-                        <span className="version-tag">BETA</span>
-                    </h3>
-                    <p style={{fontSize:'0.9em', color:'#888'}}>
-                        * 性价比 = 等效体力 / 信用点价格 (数值越高越划算)
-                    </p>
+                {/* 2. 内容区域 */}
+                <div className="card-scroll-body">
+                    <div className="tool-section" style={{marginBottom: 0}}>
+                        <p style={{fontSize:'0.9em', color:'#888', marginTop: 0}}>* 性价比 = 等效体力 / 信用点价格 (数值越高越划算)</p>
 
-                    <div className="table-container" style={{marginTop:'20px'}}>
-                        <table className="tech-table" style={{ width: '100%' }}>
-                            <thead>
-                            <tr>
-                                <th>商品名称</th>
-
-                                <th
-                                    className="sortable-th"
-                                    onClick={() => handleSort('price')}
-                                    style={{cursor:'pointer', color: sortKey==='price'?'var(--theme-yellow)':'inherit'}}
-                                >
-                                    信用价格 {getSortIcon('price')}
-                                </th>
-                                <th
-                                    className="sortable-th"
-                                    onClick={() => handleSort('stamina')}
-                                    style={{cursor:'pointer', color: sortKey==='stamina'?'var(--theme-yellow)':'inherit'}}
-                                >
-                                    等效体力 {getSortIcon('stamina')}
-                                </th>
-                                <th
-                                    className="sortable-th"
-                                    onClick={() => handleSort('efficiency')}
-                                    style={{cursor:'pointer', color: sortKey==='efficiency'?'var(--theme-yellow)':'inherit'}}
-                                >
-                                    性价比 (体力/币) {getSortIcon('efficiency')}
-                                </th>
-                                <th>备注</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {sortedItems.map(item => {
-                                const eff = getEfficiency(item);
-                                return (
-                                    <tr key={item.id}>
-                                        <td className="font-bold">{item.name}</td>
-                                        <td>{item.price}</td>
-                                        <td>{item.stamina}</td>
-                                        <td style={{
-                                            color: eff > 0.033 ? '#52c41a' : (eff > 0.03 ? 'var(--theme-yellow)' : '#888'),
-                                            fontWeight: 'bold'
-                                        }}>
-                                            {eff.toFixed(4)}
-                                        </td>
-                                        <td style={{ fontSize: '0.85em', color: '#888', maxWidth: '200px', whiteSpace: 'normal' }}>
-                                            {item.note || '-'}
-                                        </td>
-                                    </tr>
-                                )
-                            })}
-                            </tbody>
-                        </table>
+                        <div className="table-container" style={{marginTop:'20px'}}>
+                            <table className="tech-table" style={{ width: '100%' }}>
+                                <thead>
+                                <tr>
+                                    <th>商品名称</th>
+                                    <th className="sortable-th" onClick={() => handleSort('price')} style={{cursor:'pointer', color: sortKey==='price'?'var(--theme-yellow)':'inherit'}}>信用价格 {getSortIcon('price')}</th>
+                                    <th className="sortable-th" onClick={() => handleSort('stamina')} style={{cursor:'pointer', color: sortKey==='stamina'?'var(--theme-yellow)':'inherit'}}>等效体力 {getSortIcon('stamina')}</th>
+                                    <th className="sortable-th" onClick={() => handleSort('efficiency')} style={{cursor:'pointer', color: sortKey==='efficiency'?'var(--theme-yellow)':'inherit'}}>性价比 (体力/币) {getSortIcon('efficiency')}</th>
+                                    <th>备注</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {sortedItems.map(item => {
+                                    const eff = getEfficiency(item);
+                                    return (
+                                        <tr key={item.id}>
+                                            <td className="font-bold">{item.name}</td>
+                                            <td>{item.price}</td>
+                                            <td>{item.stamina}</td>
+                                            <td style={{color: eff > 0.033 ? '#52c41a' : (eff > 0.03 ? 'var(--theme-yellow)' : '#888'), fontWeight: 'bold'}}>{eff.toFixed(4)}</td>
+                                            <td style={{ fontSize: '0.85em', color: '#888', maxWidth: '200px', whiteSpace: 'normal' }}>{item.note || '-'}</td>
+                                        </tr>
+                                    )
+                                })}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -493,43 +435,24 @@ function TradeTool() {
 }
 
 // ==========================================
-// 主应用容器 (Main App)
+// 主应用容器
 // ==========================================
 function App() {
     const [activePage, setActivePage] = useState<'matrix' | 'about'| 'trade'>('matrix');
 
     return (
         <div className="app-root">
-            {/* 顶部导航栏 */}
             <header className="app-header">
                 <div className="logo-area">
                     <div className="logo-text">ENDFIELD</div>
                     <div className="logo-sub">TOOLS</div>
                 </div>
-
                 <nav className="nav-menu">
-                    <button
-                        className={`nav-item ${activePage === 'matrix' ? 'active' : ''}`}
-                        onClick={() => setActivePage('matrix')}
-                    >
-                        基质检索
-                    </button>
-                    <button
-                        className={`nav-item ${activePage === 'trade' ? 'active' : ''}`}
-                        onClick={() => setActivePage('trade')}
-                    >
-                        信用商店
-                    </button>
-                    <button
-                        className={`nav-item ${activePage === 'about' ? 'active' : ''}`}
-                        onClick={() => setActivePage('about')}
-                    >
-                        关于终端
-                    </button>
+                    <button className={`nav-item ${activePage === 'matrix' ? 'active' : ''}`} onClick={() => setActivePage('matrix')}>基质检索</button>
+                    <button className={`nav-item ${activePage === 'trade' ? 'active' : ''}`} onClick={() => setActivePage('trade')}>信用商店</button>
+                    <button className={`nav-item ${activePage === 'about' ? 'active' : ''}`} onClick={() => setActivePage('about')}>关于终端</button>
                 </nav>
             </header>
-
-            {/* 内容显示区域 */}
             <div className="app-content">
                 {activePage === 'matrix' && <MatrixTool />}
                 {activePage === 'about' && <AboutPage />}
