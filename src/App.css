@@ -17,12 +17,14 @@
     --clip-tag: polygon(0 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%);
 }
 
+/* === 1. 全局重置 === */
 * { box-sizing: border-box; }
 
 button {
     border-color: transparent !important;
     outline: none !important;
     border-radius: 0 !important;
+    -webkit-tap-highlight-color: transparent; /* iOS 点击去高亮 */
 }
 button:hover, button:focus, button:active {
     border-color: transparent !important;
@@ -70,7 +72,7 @@ body {
 
 .app-content { flex: 1; overflow: hidden; position: relative; width: 100%; }
 
-/* === 面板与卡片 === */
+/* === 2. 核心布局 & 框体 === */
 .tech-panel, .about-card {
     position: relative; isolation: isolate;
     clip-path: var(--clip-panel);
@@ -109,7 +111,7 @@ body {
 .panel-scroll-content.has-results::after { content: ""; display: block; height: 40px; width: 100%; flex-shrink: 0; }
 
 
-/* === 按钮与标签 (通用修复) === */
+/* === 3. 按钮与标签 === */
 .tech-btn, .reset-btn, .role-tag, .location-highlight {
     position: relative; isolation: isolate;
     border: none; border-radius: 0;
@@ -121,7 +123,7 @@ body {
     border-radius: 0;
 }
 
-/* 1. Tech Button */
+/* Tech Button */
 .tech-btn {
     background: var(--border-light);
     color: var(--text-primary); padding: 12px; cursor: pointer;
@@ -136,7 +138,7 @@ body {
 .tech-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 .tech-btn.muted { opacity: 0.3; }
 
-/* 2. Reset Button */
+/* Reset Button */
 .reset-btn {
     background: var(--theme-yellow); color: var(--theme-yellow);
     width: 100%; padding: 14px; font-family: 'JetBrains Mono'; font-weight: bold;
@@ -146,7 +148,7 @@ body {
 .reset-btn:hover { color: black; }
 .reset-btn:hover::before { background: var(--theme-yellow); }
 
-/* 3. Role Tag */
+/* Role Tag */
 .role-tag {
     background: var(--border-light);
     display: inline-block; padding: 2px 8px; font-size: 0.8em;
@@ -159,34 +161,22 @@ body {
 .role-tag.active { background: var(--theme-yellow); color: black; font-weight: bold; }
 .role-tag.active::before { background: var(--theme-yellow); }
 
-/* 4. Location Highlight (新版交互式卡片) */
+/* Location Highlight */
 .location-highlight {
-    background: var(--border-light); /* 默认亮边 */
+    background: var(--border-light);
     padding: 10px 15px; min-width: 100px;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     clip-path: var(--clip-btn); cursor: pointer; color: var(--text-secondary);
 }
-.location-highlight::before {
-    background: var(--bg-element); clip-path: var(--clip-btn);
-}
-.location-highlight:hover {
-    background: var(--theme-yellow); color: var(--text-primary);
-}
-.location-highlight:hover::before {
-    background: rgba(255, 193, 7, 0.1);
-}
-.location-highlight.active {
-    background: var(--theme-yellow); color: black; font-weight: bold;
-}
-.location-highlight.active::before {
-    background: var(--theme-yellow);
-}
-/* 内部文字样式 */
+.location-highlight::before { background: var(--bg-element); clip-path: var(--clip-btn); }
+.location-highlight:hover { background: var(--theme-yellow); color: var(--text-primary); }
+.location-highlight:hover::before { background: rgba(255, 193, 7, 0.1); }
+.location-highlight.active { background: var(--theme-yellow); color: black; font-weight: bold; }
+.location-highlight.active::before { background: var(--theme-yellow); }
 .loc-name { font-size: 1.1em; font-weight: bold; }
 .loc-count { font-size: 0.8em; font-family: 'JetBrains Mono'; margin-top: 4px; }
 
-
-/* === 其他样式 === */
+/* Privacy Badge */
 .privacy-badge {
     display: inline-flex; align-items: center; gap: 6px;
     font-size: 0.85em; font-family: 'JetBrains Mono';
@@ -201,6 +191,7 @@ body {
     clip-path: var(--clip-tag); z-index: -1;
 }
 
+/* Scrollbar */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: #18181a; border-left: 1px solid #333; }
 ::-webkit-scrollbar-thumb {
@@ -214,6 +205,7 @@ body {
 }
 ::-webkit-scrollbar-corner { background: #18181a; }
 
+/* Misc */
 .font-bold { font-weight: bold; color: white; }
 .attr-extra { color: var(--theme-yellow); }
 .attr-skill { color: #52c41a; }
@@ -249,3 +241,96 @@ tr.star-六 { background: rgba(255, 77, 79, 0.05); }
 .version-tag { font-size: 0.6em; background: #333; color: #aaa; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono'; font-weight: normal; }
 .fade-in { animation: fadeIn 0.3s ease-in; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+
+/* ==========================================================================
+   Mobile Adaptation (iOS / Android)
+   Triggered on screens narrower than 768px
+   ========================================================================== */
+@media screen and (max-width: 768px) {
+    /* 1. 恢复页面级滚动 */
+    body, .app-root {
+        height: auto;
+        min-height: 100vh;
+        overflow-y: auto; /* 允许原生滚动 */
+        -webkit-overflow-scrolling: touch; /* iOS 平滑滚动 */
+    }
+
+    .app-content {
+        height: auto;
+        overflow: visible;
+        flex: none;
+    }
+
+    /* 2. 紧凑型 Header */
+    .app-header {
+        padding: 0 15px;
+        height: 56px;
+    }
+    .logo-text { font-size: 1.1em; }
+    .logo-sub { display: none; } /* 隐藏副标题省空间 */
+    .nav-menu { gap: 10px; }
+    .nav-item {
+        padding: 8px 5px;
+        font-size: 0.85em;
+    }
+    .nav-item.active::after { bottom: -18px; }
+
+    /* 3. 布局改为上下堆叠 (Stack Layout) */
+    .app-layout {
+        display: flex;
+        flex-direction: column;
+        padding: 15px;
+        height: auto;
+        gap: 20px;
+        padding-bottom: calc(20px + env(safe-area-inset-bottom)); /* iOS 底部安全区 */
+    }
+
+    .about-layout {
+        padding: 15px;
+        height: auto;
+        overflow: visible;
+        padding-bottom: calc(20px + env(safe-area-inset-bottom));
+    }
+
+    /* 4. 面板自适应高度 */
+    .tech-panel, .about-card {
+        height: auto;
+        max-height: none;
+        overflow: visible; /* 让内容决定高度 */
+    }
+
+    /* 5. 侧边栏 (筛选器) 限高 + 内部滚动 */
+    /* 防止筛选器占满屏幕，给用户留出看结果的空间 */
+    .sidebar-panel .panel-scroll-content {
+        max-height: 35vh;
+        overflow-y: auto;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        padding-bottom: 15px;
+    }
+
+    /* 6. 内容区域 (结果) 不限高 */
+    .content-panel .panel-scroll-content,
+    .card-scroll-body {
+        height: auto;
+        overflow: visible;
+        max-height: none;
+    }
+
+    /* 7. 按钮与文字适配 */
+    .button-grid {
+        grid-template-columns: repeat(auto-fill, minmax(75px, 1fr));
+        gap: 8px;
+    }
+    .tech-btn {
+        padding: 10px 5px;
+        font-size: 0.85em;
+    }
+
+    /* 地区卡片适配 */
+    .location-results { gap: 8px; }
+    .location-highlight {
+        flex: 1 1 calc(50% - 8px); /* 双列显示 */
+        min-width: 0;
+    }
+}
