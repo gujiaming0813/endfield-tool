@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import './App.css';
 import rawData from './data/matrix_data.json';
 import tradeData from './data/trade_data.json';
-import type { AppData, LocationStat, LocationKey, TradeItem } from './types';
+import type {AppData, LocationStat, LocationKey, TradeItem, WeaponData} from './types';
 
 const appData = rawData as unknown as AppData;
 const weaponItems = appData.items;
@@ -32,60 +32,82 @@ const getStarMode = (rawStar: string) => {
 // 页面 1: 基质检索
 // ==========================================
 function MatrixTool() {
-    // 侧边栏筛选状态
+    // === 筛选状态 ===
+    const [selectedRole, setSelectedRole] = useState<string>('');
     const [basicSelections, setBasicSelections] = useState<string[]>([]);
     const [selectedExtra, setSelectedExtra] = useState<string>('');
     const [selectedSkill, setSelectedSkill] = useState<string>('');
-    const [selectedRole, setSelectedRole] = useState<string>('');
 
-    // 地区筛选状态 (null 代表“自动选择最佳”，不再代表“全部”)
+    // === 区域状态 ===
+    // selectedLocation: 用户手动在侧边栏选中的区域
+    // null 代表未手动指定区域（此时将启用自动推荐）
     const [selectedLocation, setSelectedLocation] = useState<LocationKey | null>(null);
 
+    // === 选项数据 ===
     const options = useMemo(() => {
         return {
             roles: appData.allRoles.filter(r => r !== '否' && r !== '/'),
             basics: Array.from(new Set(weaponItems.map(d => d.basic))),
             extras: Array.from(new Set(weaponItems.map(d => d.extra))),
-            skills: Array.from(new Set(weaponItems.map(d => d.skill)))
+            skills: Array.from(new Set(weaponItems.map(d => d.skill))),
+            // [关键] 包含 Locations 列表供侧边栏渲染
+            locations: Object.keys(LOCATION_MAP) as LocationKey[]
         };
     }, []);
 
-    // === 筛选操作处理 (每次变动都重置地区为自动选择) ===
+    // === 交互处理 (叠加筛选逻辑) ===
+
+    // 1. 点击干员：切换角色，【不清空】手动区域
     const handleRoleSelect = (value: string) => {
-        setSelectedRole(prev => prev === value ? '' : value);
-        setSelectedLocation(null);
+        if (selectedRole === value) {
+            setSelectedRole('');
+        } else {
+            setSelectedRole(value);
+            // 不清空区域，允许查看“某角色在某区域”的掉落
+        }
     };
 
+    // 2. 点击侧边栏区域：切换区域，【不清空】角色
+    const handleLocationSidebarSelect = (key: LocationKey) => {
+        if (selectedLocation === key) {
+            setSelectedLocation(null); // 再次点击取消手动区域
+        } else {
+            setSelectedLocation(key);
+            // 不清空角色
+        }
+    };
+
+    // 3. 基础属性：最多3个，不清空其他
     const handleBasicToggle = (value: string) => {
         setBasicSelections(prev => {
-            const newVal = prev.includes(value) ? prev.filter(item => item !== value) : (prev.length < 3 ? [...prev, value] : prev);
-            return newVal;
+            if (prev.includes(value)) return prev.filter(item => item !== value);
+            if (prev.length < 3) return [...prev, value];
+            return prev;
         });
-        setSelectedLocation(null);
     };
 
+    // 4. 附加属性：单选，互斥，不清空其他
     const handleExtraSelect = (value: string) => {
         if (selectedExtra === value) {
             setSelectedExtra('');
         } else {
             setSelectedExtra(value);
-            setSelectedSkill('');
+            setSelectedSkill(''); // 附加与技能互斥
         }
-        setSelectedLocation(null);
     };
 
+    // 5. 技能属性：单选，互斥，不清空其他
     const handleSkillSelect = (value: string) => {
         if (selectedSkill === value) {
             setSelectedSkill('');
         } else {
             setSelectedSkill(value);
-            setSelectedExtra('');
+            setSelectedExtra(''); // 技能与附加互斥
         }
-        setSelectedLocation(null);
     };
 
-    // 点击地区切换 (强制选中，不再Toggle)
-    const handleLocationSelect = (key: LocationKey) => {
+    // 6. 结果页点击卡片切换区域 (视为手动选择)
+    const handleResultLocationSwitch = (key: LocationKey) => {
         setSelectedLocation(key);
     };
 
@@ -99,68 +121,92 @@ function MatrixTool() {
 
     // === 核心计算逻辑 ===
     const result = useMemo(() => {
-        // 1. 筛选出所有符合条件的武器 (Global Pool)
-        const hasRole = selectedRole !== '';
-        const hasAnyAttribute = basicSelections.length > 0 || selectedExtra !== '' || selectedSkill !== '';
-
-        if (!hasRole && !hasAnyAttribute) return null;
-
-        const globalMatchedWeapons = weaponItems.filter(item => {
-            if (hasRole) {
-                if (!item.roleList || item.roleList.length === 0) return false;
-                if (!item.roleList.includes(selectedRole)) return false;
-            }
-
+        // 1. 属性过滤器 (通用)
+        const attrFilter = (item: WeaponData) => {
             const basicMatch = basicSelections.length === 0 || basicSelections.includes(item.basic);
             let otherMatch = true;
             if (selectedExtra) otherMatch = item.extra === selectedExtra;
             else if (selectedSkill) otherMatch = item.skill === selectedSkill;
-
             return basicMatch && otherMatch;
-        });
+        };
 
-        if (globalMatchedWeapons.length === 0) {
-            return { empty: true, displayWeapons: [], validLocations: [], activeLocation: null };
+        const hasInput = selectedRole !== '' || selectedLocation !== null ||
+            basicSelections.length > 0 || selectedExtra !== '' || selectedSkill !== '';
+
+        if (!hasInput) return null;
+
+        // 2. 确定“目标武器 (Targets)”
+        // 这是所有符合当前筛选逻辑的武器池，用于统计分布
+        let targetWeapons = [];
+
+        if (selectedRole) {
+            // 场景 A: 有角色 (叠加属性)
+            // 无论是否有区域，Target 都是该角色的武器，这样才能统计该角色在各区的分布
+            targetWeapons = weaponItems.filter(w => w.roleList.includes(selectedRole) && attrFilter(w));
+        } else if (selectedLocation) {
+            // 场景 B: 无角色，有区域 (叠加属性)
+            // Target 是该区域符合属性的武器
+            targetWeapons = weaponItems.filter(w => w[selectedLocation!] === 1 && attrFilter(w));
+        } else {
+            // 场景 C: 纯属性筛选
+            targetWeapons = weaponItems.filter(w => attrFilter(w));
         }
 
-        // 2. 统计各地区掉落数量
+        if (targetWeapons.length === 0) {
+            return { empty: true, displayWeapons: [], validLocations: [], activeLocation: null, targetCount: 0 };
+        }
+
+        // 3. 统计区域分布
         const keys = Object.keys(LOCATION_MAP) as LocationKey[];
         const locationStats: LocationStat[] = keys.map(key => {
             return {
                 key: key,
                 name: LOCATION_MAP[key],
-                count: globalMatchedWeapons.reduce((sum, item) => sum + item[key], 0)
+                count: targetWeapons.reduce((sum, item) => sum + item[key], 0)
             };
         });
 
-        // 3. 过滤并排序 (倒序排列：最多的在最前)
         const validLocations = locationStats
             .filter(l => l.count > 0)
             .sort((a, b) => b.count - a.count);
 
-        // 4. 确定当前生效的地区 (Active Location)
-        // 逻辑：如果用户手动选了，且该地区有效，则用用户的；否则默认用第一个(最多的)
+        // 4. 确定当前展示的区域 (Active Location)
+        // 优先级：手动选择 > 自动推荐 (只要有结果，就自动选最多的)
         let activeLocation = selectedLocation;
-        const bestLocation = validLocations.length > 0 ? (validLocations[0].key as LocationKey) : null;
 
-        const isActiveValid = activeLocation && validLocations.find(l => l.key === activeLocation);
-
-        if (!activeLocation || !isActiveValid) {
-            activeLocation = bestLocation;
+        if (!activeLocation && validLocations.length > 0) {
+            // [修复]：不再校验 && selectedRole，只要没有手动选区域，就自动定位到掉落最多的区域
+            activeLocation = validLocations[0].key as LocationKey;
         }
 
-        // 5. 根据 Active Location 过滤展示列表
-        let displayWeapons = globalMatchedWeapons;
+        // 5. 生成展示列表
+        let displayWeapons = [];
+
         if (activeLocation) {
-            displayWeapons = globalMatchedWeapons.filter(item => item[activeLocation!] === 1);
+            // 如果确定了区域，显示该区域符合属性的所有武器
+            // 这样能实现：在“枢纽区”查看“陈”的掉落，同时也能看到该区其他的“攻击力”武器
+            const allInLoc = weaponItems.filter(w => w[activeLocation!] === 1);
+            displayWeapons = allInLoc.filter(w => attrFilter(w));
+        } else {
+            // 如果没确定区域 (极少情况，如无结果)，显示所有 Target
+            displayWeapons = targetWeapons;
         }
 
-        // 6. 列表排序 (星级高 -> 低)
-        displayWeapons.sort((a, b) => {
-            const hasRoleA = a.roleList.length > 0;
-            const hasRoleB = b.roleList.length > 0;
-            if (hasRoleA && !hasRoleB) return -1;
-            if (!hasRoleA && hasRoleB) return 1;
+        // 6. 标记与排序
+        const processedWeapons = displayWeapons.map(w => {
+            let isTarget = false;
+            // 高亮逻辑：仅在角色模式下，高亮该角色的适配武器
+            if (selectedRole) {
+                isTarget = w.roleList.includes(selectedRole);
+            } else {
+                isTarget = true;
+            }
+            return { ...w, isTarget };
+        });
+
+        processedWeapons.sort((a, b) => {
+            if (a.isTarget && !b.isTarget) return -1;
+            if (!a.isTarget && b.isTarget) return 1;
             const weightA = STAR_WEIGHT[getStarMode(a.star)] || 0;
             const weightB = STAR_WEIGHT[getStarMode(b.star)] || 0;
             return weightB - weightA;
@@ -168,10 +214,10 @@ function MatrixTool() {
 
         return {
             empty: false,
-            displayWeapons,
+            displayWeapons: processedWeapons,
             validLocations,
-            activeLocation, // 告诉 UI 到底哪个被选中了
-            totalMatchCount: globalMatchedWeapons.length
+            activeLocation,
+            targetCount: targetWeapons.length
         };
     }, [basicSelections, selectedExtra, selectedSkill, selectedRole, selectedLocation]);
 
@@ -186,6 +232,7 @@ function MatrixTool() {
                 </div>
 
                 <div className="panel-scroll-content">
+                    {/* A. 干员筛选 */}
                     <div className="filter-section">
                         <div className="section-title"><span className="title-icon">ID</span>适配角色 (优先筛选)</div>
                         <div className="button-grid">
@@ -201,6 +248,25 @@ function MatrixTool() {
                         </div>
                     </div>
                     <div className="filter-separator"></div>
+
+                    {/* [修复] 区域直达模块 - 绑定 selectedLocation 实现正确高亮 */}
+                    <div className="filter-section">
+                        <div className="section-title"><span className="title-icon">LOC</span>区域直达</div>
+                        <div className="button-grid">
+                            {options.locations.map(locKey => (
+                                <button
+                                    key={locKey}
+                                    className={`tech-btn ${selectedLocation === locKey ? 'active' : ''}`}
+                                    onClick={() => handleLocationSidebarSelect(locKey)}
+                                >
+                                    {LOCATION_MAP[locKey]}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="filter-separator"></div>
+
+                    {/* 基础属性筛选 */}
                     <div className="filter-section">
                         <div className="section-title"><span className="title-icon">A</span>基础属性 (最多3项)</div>
                         <div className="button-grid">
@@ -213,7 +279,10 @@ function MatrixTool() {
                             })}
                         </div>
                     </div>
+
                     <div className="filter-separator"></div>
+
+                    {/* 附加属性筛选 */}
                     <div className="filter-section">
                         <div className="section-title"><span className="title-icon">B</span>附加属性 (与C互斥)</div>
                         <div className="button-grid">
@@ -222,6 +291,8 @@ function MatrixTool() {
                             ))}
                         </div>
                     </div>
+
+                    {/* 技能属性筛选 */}
                     <div className="filter-section">
                         <div className="section-title"><span className="title-icon">C</span>技能属性 (与B互斥)</div>
                         <div className="button-grid">
@@ -259,34 +330,43 @@ function MatrixTool() {
                                 <div className="inner-header">区域掉落分布 // DROP LOCATIONS</div>
                                 <div className="inner-body">
                                     <div className="location-results">
-                                        {/* 渲染地区列表 (已经按数量倒序排列) */}
+                                        {/* 渲染区域卡片：高亮当前 activeLocation */}
                                         {result!.validLocations.map(loc => {
-                                            // 判断是否为当前激活的地区
                                             const isActive = result!.activeLocation === loc.key;
-
                                             return (
                                                 <div
                                                     key={loc.key}
                                                     className={`location-highlight ${isActive ? 'active' : ''}`}
-                                                    onClick={() => handleLocationSelect(loc.key as LocationKey)}
+                                                    onClick={() => handleResultLocationSwitch(loc.key as LocationKey)}
                                                 >
                                                     <span className="loc-name">{loc.name}</span>
                                                     <span className="loc-count">
-                                                        命中: {loc.count} / {result!.totalMatchCount}
+                                                        含目标: {loc.count} / {result!.targetCount}
                                                     </span>
                                                 </div>
                                             );
                                         })}
+                                        {/* 如果纯属性模式且未自动定位，显示汇总 */}
+                                        {result!.validLocations.length === 0 && result!.activeLocation && (
+                                            <div className="location-highlight active">
+                                                <span className="loc-name">{LOCATION_MAP[result!.activeLocation]}</span>
+                                                <span className="loc-count">当前展示</span>
+                                            </div>
+                                        )}
                                     </div>
                                     <p style={{marginTop: '15px', fontSize: '0.8em', color: '#666'}}>
-                                        * 系统已为您自动选中命中数最多的区域，点击上方卡片可切换查看。
+                                        {selectedRole
+                                            ? selectedLocation
+                                                ? `* 正在查看 [${selectedRole}] 在 [${LOCATION_MAP[selectedLocation]}] 的掉落。`
+                                                : `* 已为您自动定位到 [${selectedRole}] 掉落最多的区域。`
+                                            : `* 已为您自动定位到命中数最多的区域，点击上方可切换查看。`}
                                     </p>
                                 </div>
                             </div>
 
                             <div className="inner-card weapons-list">
                                 <div className="inner-header">
-                                    检索结果 // SEARCH RESULTS
+                                    {selectedRole ? '区域掉落筛选 (标星为适配)' : '检索结果'} // RESULTS
                                     <span className="result-count">
                                         [{result!.displayWeapons.length}
                                         {result!.activeLocation ? ` @ ${LOCATION_MAP[result!.activeLocation]}` : ''}]
@@ -307,9 +387,18 @@ function MatrixTool() {
                                         <tbody>
                                         {result!.displayWeapons.map((weapon, idx) => {
                                             const starMode = getStarMode(weapon.star);
+                                            // 动态样式：目标高亮
+                                            const isHighlight = weapon.isTarget;
+                                            const rowStyle = isHighlight
+                                                ? { background: 'rgba(255, 193, 7, 0.08)' }
+                                                : { opacity: 0.6 };
+
                                             return (
-                                                <tr key={idx} className={`star-${starMode}`}>
-                                                    <td className="font-bold">{weapon.name}</td>
+                                                <tr key={idx} className={`star-${starMode}`} style={rowStyle}>
+                                                    <td className="font-bold" style={{color: isHighlight ? 'var(--theme-yellow)' : 'inherit'}}>
+                                                        {weapon.name}
+                                                        {selectedRole && isHighlight && <span style={{marginLeft:'5px', fontSize:'0.8em'}}>★</span>}
+                                                    </td>
                                                     <td><span className={`badge star-${starMode}`}>{starMode}星</span></td>
                                                     <td>{weapon.basic}</td>
                                                     <td className={selectedExtra ? 'attr-extra font-bold' : ''}>{weapon.extra}</td>
@@ -319,16 +408,21 @@ function MatrixTool() {
                                                             <span style={{ opacity: 0.3 }}>-</span>
                                                         ) : (
                                                             <div className="role-tag-container">
-                                                                {weapon.roleList.map((roleName, rIdx) => (
-                                                                    <span
-                                                                        key={rIdx}
-                                                                        className={`role-tag ${roleName === selectedRole ? 'active' : ''}`}
-                                                                        onClick={() => handleRoleSelect(roleName)}
-                                                                        title={`点击筛选: ${roleName}`}
-                                                                    >
-                                      {roleName}
-                                    </span>
-                                                                ))}
+                                                                {weapon.roleList.map((roleName, rIdx) => {
+                                                                    const isSelectedRole = roleName === selectedRole;
+                                                                    return (
+                                                                        <span
+                                                                            key={rIdx}
+                                                                            className={`role-tag ${isSelectedRole ? 'active' : ''}`}
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleRoleSelect(roleName);
+                                                                            }}
+                                                                        >
+                                                                            {roleName}
+                                                                        </span>
+                                                                    );
+                                                                })}
                                                             </div>
                                                         )}
                                                     </td>
@@ -369,10 +463,10 @@ function AboutPage() {
                     </div>
 
                     <div className="tool-section">
-                        <h3>基质刷取检索工具 <span className="version-tag">v1.0.0</span></h3>
+                        <h3>基质刷取检索工具 <span className="version-tag">v1.1.0</span></h3>
                         <ul className="tech-list">
                             <li><strong>数据来源</strong>：<a href="https://space.bilibili.com/329400340" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--theme-yellow)', textDecoration: 'underline', cursor: 'pointer' }}>b站：皇战萌新轲</a></li>
-                            <li><strong>核心功能</strong>：支持多属性交集筛选与角色反向检索。</li>
+                            <li><strong>功能更新</strong>：支持属性叠加筛选；角色与区域可组合查询。</li>
                         </ul>
                     </div>
 
@@ -485,6 +579,7 @@ function App() {
         <div className="app-root">
             <header className="app-header">
                 <div className="logo-area">
+                    {/* 使用正确的图标引用 */}
                     <img src="logo.svg" alt="logo" style={{ width: '32px', height: '32px' }} />
                     <div className="logo-text">ENDFIELD</div>
                     <div className="logo-sub">TOOLS</div>
