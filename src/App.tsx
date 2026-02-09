@@ -2,10 +2,13 @@ import { useState, useMemo } from 'react';
 import './App.css';
 import rawData from './data/matrix_data.json';
 import tradeData from './data/trade_data.json';
-import type {AppData, LocationStat, LocationKey, TradeItem, WeaponData} from './types';
+import charRawData from './data/character_data.json';
+// 1. 引入 WeaponData 类型
+import type { AppData, LocationStat, LocationKey, TradeItem, WeaponData, CharacterData } from './types';
 
 const appData = rawData as unknown as AppData;
 const weaponItems = appData.items;
+const characterData = charRawData as unknown as CharacterData;
 
 const LOCATION_MAP: Record<LocationKey, string> = {
     loc_hub: '枢纽区',
@@ -32,30 +35,27 @@ const getStarMode = (rawStar: string) => {
 // 页面 1: 基质检索
 // ==========================================
 function MatrixTool() {
-    // === 筛选状态 ===
-    const [selectedRole, setSelectedRole] = useState<string>('');
+    // 侧边栏筛选状态
     const [basicSelections, setBasicSelections] = useState<string[]>([]);
     const [selectedExtra, setSelectedExtra] = useState<string>('');
     const [selectedSkill, setSelectedSkill] = useState<string>('');
+    const [selectedRole, setSelectedRole] = useState<string>('');
 
-    // === 区域状态 ===
-    // selectedLocation: 用户手动在侧边栏选中的区域
-    // null 代表未手动指定区域（此时将启用自动推荐）
+    // 地区筛选状态 (null 代表“自动选择最佳”，不再代表“全部”)
     const [selectedLocation, setSelectedLocation] = useState<LocationKey | null>(null);
 
-    // === 选项数据 ===
     const options = useMemo(() => {
         return {
             roles: appData.allRoles.filter(r => r !== '否' && r !== '/'),
             basics: Array.from(new Set(weaponItems.map(d => d.basic))),
             extras: Array.from(new Set(weaponItems.map(d => d.extra))),
             skills: Array.from(new Set(weaponItems.map(d => d.skill))),
-            // [关键] 包含 Locations 列表供侧边栏渲染
+            // 必须包含 Locations 列表供侧边栏渲染
             locations: Object.keys(LOCATION_MAP) as LocationKey[]
         };
     }, []);
 
-    // === 交互处理 (叠加筛选逻辑) ===
+    // === 筛选操作处理 (每次变动都重置地区为自动选择) ===
 
     // 1. 点击干员：切换角色，【不清空】手动区域
     const handleRoleSelect = (value: string) => {
@@ -63,30 +63,36 @@ function MatrixTool() {
             setSelectedRole('');
         } else {
             setSelectedRole(value);
-            // 不清空区域，允许查看“某角色在某区域”的掉落
         }
     };
 
     // 2. 点击侧边栏区域：切换区域，【不清空】角色
     const handleLocationSidebarSelect = (key: LocationKey) => {
         if (selectedLocation === key) {
-            setSelectedLocation(null); // 再次点击取消手动区域
+            setSelectedLocation(null); // 再次点击取消
         } else {
             setSelectedLocation(key);
-            // 不清空角色
+            // 这里不再调用 setSelectedRole('')，允许两者共存
         }
     };
 
-    // 3. 基础属性：最多3个，不清空其他
+    // 3. 基础属性筛选：最多选 3 个，不清空角色/区域
     const handleBasicToggle = (value: string) => {
         setBasicSelections(prev => {
-            if (prev.includes(value)) return prev.filter(item => item !== value);
-            if (prev.length < 3) return [...prev, value];
+            // 如果已选中，则取消
+            if (prev.includes(value)) {
+                return prev.filter(item => item !== value);
+            }
+            // 如果未选中且少于3个，则添加
+            if (prev.length < 3) {
+                return [...prev, value];
+            }
+            // 否则不变
             return prev;
         });
     };
 
-    // 4. 附加属性：单选，互斥，不清空其他
+    // 4. 附加属性筛选：与技能互斥，单选，不清空角色/区域
     const handleExtraSelect = (value: string) => {
         if (selectedExtra === value) {
             setSelectedExtra('');
@@ -96,7 +102,7 @@ function MatrixTool() {
         }
     };
 
-    // 5. 技能属性：单选，互斥，不清空其他
+    // 5. 技能属性筛选：与附加互斥，单选，不清空角色/区域
     const handleSkillSelect = (value: string) => {
         if (selectedSkill === value) {
             setSelectedSkill('');
@@ -106,7 +112,7 @@ function MatrixTool() {
         }
     };
 
-    // 6. 结果页点击卡片切换区域 (视为手动选择)
+    // 6. 结果页点击卡片切换区域
     const handleResultLocationSwitch = (key: LocationKey) => {
         setSelectedLocation(key);
     };
@@ -122,6 +128,7 @@ function MatrixTool() {
     // === 核心计算逻辑 ===
     const result = useMemo(() => {
         // 1. 属性过滤器 (通用)
+        // 修复：将 item: any 改为 item: WeaponData
         const attrFilter = (item: WeaponData) => {
             const basicMatch = basicSelections.length === 0 || basicSelections.includes(item.basic);
             let otherMatch = true;
@@ -136,19 +143,18 @@ function MatrixTool() {
         if (!hasInput) return null;
 
         // 2. 确定“目标武器 (Targets)”
-        // 这是所有符合当前筛选逻辑的武器池，用于统计分布
+        // 这是所有符合当前筛选逻辑的武器池
         let targetWeapons = [];
 
         if (selectedRole) {
-            // 场景 A: 有角色 (叠加属性)
-            // 无论是否有区域，Target 都是该角色的武器，这样才能统计该角色在各区的分布
+            // 如果选了角色：目标是该角色的适配武器 (叠加属性)
+            // 即使选了区域，Target 依然是该角色的武器（用于统计该角色在各区的分布）
             targetWeapons = weaponItems.filter(w => w.roleList.includes(selectedRole) && attrFilter(w));
         } else if (selectedLocation) {
-            // 场景 B: 无角色，有区域 (叠加属性)
-            // Target 是该区域符合属性的武器
+            // 如果没选角色但选了区域：目标是该区域的武器 (叠加属性)
             targetWeapons = weaponItems.filter(w => w[selectedLocation!] === 1 && attrFilter(w));
         } else {
-            // 场景 C: 纯属性筛选
+            // 纯属性模式
             targetWeapons = weaponItems.filter(w => attrFilter(w));
         }
 
@@ -171,11 +177,11 @@ function MatrixTool() {
             .sort((a, b) => b.count - a.count);
 
         // 4. 确定当前展示的区域 (Active Location)
-        // 优先级：手动选择 > 自动推荐 (只要有结果，就自动选最多的)
+        // 优先级：手动选择 (selectedLocation) > 自动推荐 (Best Location for Role)
         let activeLocation = selectedLocation;
 
         if (!activeLocation && validLocations.length > 0) {
-            // [修复]：不再校验 && selectedRole，只要没有手动选区域，就自动定位到掉落最多的区域
+            // 只要没有手动选区域，就自动定位到掉落最多的区域
             activeLocation = validLocations[0].key as LocationKey;
         }
 
@@ -188,25 +194,28 @@ function MatrixTool() {
             const allInLoc = weaponItems.filter(w => w[activeLocation!] === 1);
             displayWeapons = allInLoc.filter(w => attrFilter(w));
         } else {
-            // 如果没确定区域 (极少情况，如无结果)，显示所有 Target
+            // 如果没确定区域 (纯属性模式)，显示所有 Target
             displayWeapons = targetWeapons;
         }
 
         // 6. 标记与排序
         const processedWeapons = displayWeapons.map(w => {
             let isTarget = false;
-            // 高亮逻辑：仅在角色模式下，高亮该角色的适配武器
+            // 仅在角色模式下，高亮该角色的适配武器
             if (selectedRole) {
                 isTarget = w.roleList.includes(selectedRole);
             } else {
+                // 其他模式下，大家都是平等的
                 isTarget = true;
             }
             return { ...w, isTarget };
         });
 
         processedWeapons.sort((a, b) => {
+            // 优先显示适配武器
             if (a.isTarget && !b.isTarget) return -1;
             if (!a.isTarget && b.isTarget) return 1;
+            // 其次按星级
             const weightA = STAR_WEIGHT[getStarMode(a.star)] || 0;
             const weightB = STAR_WEIGHT[getStarMode(b.star)] || 0;
             return weightB - weightA;
@@ -314,7 +323,7 @@ function MatrixTool() {
                         <div className="placeholder-state">
                             <div className="scanner-line"></div>
                             <h2>AWAITING INPUT...</h2>
-                            <p>请在左侧选择 [任意条件] 即可开始检索</p>
+                            <p>请选择 [干员]、[区域] 或 [属性] 进行检索</p>
                         </div>
                     )}
                     {result?.empty && (
@@ -327,7 +336,7 @@ function MatrixTool() {
                     {hasResults && (
                         <div className="results-container fade-in">
                             <div className="inner-card recommendation">
-                                <div className="inner-header">区域掉落分布 // DROP LOCATIONS</div>
+                                <div className="inner-header">区域分布与切换 // LOCATION SWITCH</div>
                                 <div className="inner-body">
                                     <div className="location-results">
                                         {/* 渲染区域卡片：高亮当前 activeLocation */}
@@ -572,8 +581,192 @@ function TradeTool() {
     );
 }
 
+// ==========================================
+// 页面 4: 干员档案
+// ==========================================
+function CharacterTool() {
+    // 筛选状态
+    const [selectedFaction, setSelectedFaction] = useState<string>('');
+    const [selectedRace, setSelectedRace] = useState<string>('');
+    const [selectedProfession, setSelectedProfession] = useState<string>('');
+
+    // 选项数据
+    const options = useMemo(() => {
+        return {
+            factions: Array.from(new Set(characterData.items.map(c => c.faction))).filter(Boolean),
+            races: Array.from(new Set(characterData.items.map(c => c.race))).filter(Boolean),
+            professions: Array.from(new Set(characterData.items.map(c => c.profession))).filter(Boolean)
+        };
+    }, []);
+
+    // 交互处理：单选但可叠加
+    const handleFactionSelect = (val: string) => {
+        setSelectedFaction(prev => prev === val ? '' : val);
+    };
+
+    const handleRaceSelect = (val: string) => {
+        setSelectedRace(prev => prev === val ? '' : val);
+    };
+
+    const handleProfessionSelect = (val: string) => {
+        setSelectedProfession(prev => prev === val ? '' : val);
+    };
+
+    const handleReset = () => {
+        setSelectedFaction('');
+        setSelectedRace('');
+    };
+
+    // 核心计算逻辑
+    const filteredCharacters = useMemo(() => {
+        return characterData.items.filter(item => {
+            const matchFaction = selectedFaction ? item.faction === selectedFaction : true;
+            const matchRace = selectedRace ? item.race === selectedRace : true;
+            // [新增] 职业匹配
+            const matchProfession = selectedProfession ? item.profession === selectedProfession : true;
+
+            return matchFaction && matchRace && matchProfession;
+        });
+    }, [selectedFaction, selectedRace, selectedProfession]);
+
+    return (
+        <div className="app-layout fade-in">
+            <aside className="tech-panel sidebar-panel">
+                <div className="panel-header-area">
+                    <h1>干员档案终端</h1>
+                    <div className="tech-decoration">/// PERSONNEL ARCHIVES ///</div>
+                </div>
+
+                <div className="panel-scroll-content">
+                    {/* 阵营筛选 */}
+                    <div className="filter-section">
+                        <div className="section-title"><span className="title-icon">FAC</span>所属阵营 (关联查询)</div>
+                        <div className="button-grid">
+                            {options.factions.map(fac => (
+                                <button
+                                    key={fac}
+                                    className={`tech-btn ${selectedFaction === fac ? 'active' : ''}`}
+                                    onClick={() => handleFactionSelect(fac)}
+                                >
+                                    {fac}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="filter-separator"></div>
+
+                    {/* 种族筛选 */}
+                    <div className="filter-section">
+                        <div className="section-title"><span className="title-icon">RAC</span>种族分类 (关联查询)</div>
+                        <div className="button-grid">
+                            {options.races.map(race => (
+                                <button
+                                    key={race}
+                                    className={`tech-btn ${selectedRace === race ? 'active' : ''}`}
+                                    onClick={() => handleRaceSelect(race)}
+                                >
+                                    {race}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 职业筛选 */}
+                    <div className="filter-section">
+                        <div className="section-title"><span className="title-icon">JOB</span>职业分类 (关联查询)</div>
+                        <div className="button-grid">
+                            {options.professions.map(prof => (
+                                <button
+                                    key={prof}
+                                    className={`tech-btn ${selectedProfession === prof ? 'active' : ''}`}
+                                    onClick={() => handleProfessionSelect(prof)}
+                                >
+                                    {prof}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="panel-footer-area">
+                    <button className="reset-btn" onClick={handleReset}>RESET FILTER // 重置</button>
+                </div>
+            </aside>
+
+            <main className="tech-panel content-panel">
+                <div className={`panel-scroll-content results-wrapper ${filteredCharacters.length > 0 ? 'has-results' : ''}`}>
+                    {filteredCharacters.length === 0 ? (
+                        <div className="no-data-state">
+                            <h2>NO MATCH FOUND</h2>
+                            <p>未找到符合条件的干员档案。</p>
+                        </div>
+                    ) : (
+                        <div className="results-container fade-in">
+                            <div className="inner-card weapons-list">
+                                <div className="inner-header">
+                                    档案列表 // PERSONNEL LIST
+                                    <span className="result-count">
+                                        [{filteredCharacters.length}]
+                                    </span>
+                                </div>
+                                <div className="table-container">
+                                    <table className="tech-table">
+                                        <thead>
+                                        <tr>
+                                            <th>代号</th>
+                                            <th>英文名</th>
+                                            <th>职业</th>
+                                            <th>种族</th>
+                                            <th>阵营</th>
+                                            <th>备注</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {filteredCharacters.map((char, idx) => {
+                                            // [高亮样式]：仅字体变色和加粗
+                                            const highlightStyle = {
+                                                color: 'var(--theme-yellow)',
+                                                fontWeight: 'bold'
+                                            };
+
+                                            return (
+                                                <tr key={idx}>
+                                                    <td className="font-bold">{char.name}</td>
+                                                    <td style={{opacity:0.7, fontSize:'0.9em'}}>{char.engName}</td>
+
+                                                    {/* [新增] 职业列：匹配时直接应用 highlightStyle，不使用 badge */}
+                                                    <td style={selectedProfession === char.profession ? highlightStyle : {}}>
+                                                        {char.profession}
+                                                    </td>
+
+                                                    {/* [修改] 种族列应用高亮 */}
+                                                    <td style={selectedRace === char.race ? highlightStyle : {}}>
+                                                        {char.race}
+                                                    </td>
+
+                                                    {/* [修改] 阵营列应用高亮 */}
+                                                    <td style={selectedFaction === char.faction ? highlightStyle : {}}>
+                                                        {char.faction}
+                                                    </td>
+
+                                                    <td style={{fontSize:'0.85em', color:'#888'}}>{char.remark || '-'}</td>
+                                                </tr>
+                                            )})}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </main>
+        </div>
+    );
+}
+
 function App() {
-    const [activePage, setActivePage] = useState<'matrix' | 'about'| 'trade'>('matrix');
+    // 增加 'character' 页面状态
+    const [activePage, setActivePage] = useState<'matrix' | 'about'| 'trade' | 'character'>('matrix');
 
     return (
         <div className="app-root">
@@ -586,12 +779,14 @@ function App() {
                 </div>
                 <nav className="nav-menu">
                     <button className={`nav-item ${activePage === 'matrix' ? 'active' : ''}`} onClick={() => setActivePage('matrix')}>基质检索</button>
+                    <button className={`nav-item ${activePage === 'character' ? 'active' : ''}`} onClick={() => setActivePage('character')}>干员档案</button>
                     <button className={`nav-item ${activePage === 'trade' ? 'active' : ''}`} onClick={() => setActivePage('trade')}>信用商店</button>
                     <button className={`nav-item ${activePage === 'about' ? 'active' : ''}`} onClick={() => setActivePage('about')}>关于终端</button>
                 </nav>
             </header>
             <div className="app-content">
                 {activePage === 'matrix' && <MatrixTool />}
+                {activePage === 'character' && <CharacterTool />}
                 {activePage === 'about' && <AboutPage />}
                 {activePage === 'trade' && <TradeTool />}
             </div>

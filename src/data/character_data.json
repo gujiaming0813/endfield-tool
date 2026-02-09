@@ -1,0 +1,27 @@
+{
+  "items": [
+    { "name": "管理员", "engName": "Endministrator", "race": "未知", "faction": "终末地工业", "profession": "近卫", "remark": "玩家角色" },
+    { "name": "佩丽卡", "engName": "Perlica", "race": "黎博利", "faction": "终末地工业", "profession": "术师", "remark": "协议监督" },
+    { "name": "陈千语", "engName": "Chen Qianyu", "race": "龙", "faction": "终末地工业", "profession": "近卫", "remark": "" },
+    { "name": "狼卫", "engName": "Wulfgard", "race": "鲁珀", "faction": "终末地工业", "profession": "术师", "remark": "前裂地者成员" },
+    { "name": "埃特拉", "engName": "Estella", "race": "菲林", "faction": "终末地工业", "profession": "近卫", "remark": "Z7小队" },
+    { "name": "伊冯", "engName": "Yvonne", "race": "瓦伊凡", "faction": "终末地工业", "profession": "强袭", "remark": "" },
+    { "name": "大潘", "engName": "Da Pan", "race": "乌萨斯", "faction": "终末地工业", "profession": "强袭", "remark": "前宏山科学院成员" },
+    { "name": "秋栗", "engName": "Akekuri", "race": "佩洛", "faction": "终末地工业", "profession": "近卫", "remark": "Z7小队队长" },
+    { "name": "萤石", "engName": "Fluorite", "race": "斐迪亚", "faction": "终末地工业", "profession": "术师", "remark": "Z7小队" },
+    { "name": "阿列什", "engName": "Alesh", "race": "阿纳蒂", "faction": "终末地工业", "profession": "先锋", "remark": "经工会介绍加入" },
+    { "name": "安塔尔", "engName": "Antal", "race": "萨弗拉", "faction": "终末地工业", "profession": "辅助", "remark": "" },
+    { "name": "别礼", "engName": "Pogranichnik", "race": "乌萨斯", "faction": "终末地工业", "profession": "先锋", "remark": "" },
+    { "name": "莱万汀", "engName": "Laevatain", "race": "萨卡兹", "faction": "终末地工业", "profession": "强袭", "remark": "经罗德岛认证" },
+    { "name": "弧光", "engName": "Arclight", "race": "库兰塔", "faction": "费奥纳环道", "profession": "近卫", "remark": "游荡者组织" },
+    { "name": "黎风", "engName": "Lifeng", "race": "阿纳萨", "faction": "宏山科学院", "profession": "近卫", "remark": "" },
+    { "name": "艾维文娜", "engName": "Avywenna", "race": "卡特斯", "faction": "塔卫二总商会", "profession": "强袭", "remark": "商业世家" },
+    { "name": "卡契尔", "engName": "Catcher", "race": "鲁珀", "faction": "塔卫二总商会", "profession": "重装", "remark": "军人家庭出身" },
+    { "name": "余烬", "engName": "Ember", "race": "萨科塔", "faction": "钢誓骑士团", "profession": "重装", "remark": "巡礼骑士" },
+    { "name": "赛希", "engName": "Xaihi", "race": "萨卡兹", "faction": "寂语修会", "profession": "术师", "remark": "技术交流人员" },
+    { "name": "艾尔黛拉", "engName": "Ardelia", "race": "卡普里尼", "faction": "罗德岛", "profession": "辅助", "remark": "外派干员" },
+    { "name": "洁尔佩塔", "engName": "Gilberta", "race": "沃尔珀", "faction": "罗德岛", "profession": "辅助", "remark": "外派信使" },
+    { "name": "昼雪", "engName": "Snowshine", "race": "乌萨斯", "faction": "罗德岛", "profession": "重装", "remark": "外派搜救专家" },
+    { "name": "骏卫", "engName": "Junwei", "race": "黎博利", "faction": "罗德岛", "profession": "先锋", "remark": "前钢誓骑士团成员" }
+  ]
+}

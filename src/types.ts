@@ -39,3 +39,17 @@ export interface TradeItem {
     stamina: number;    // 等效体力值
     note: string;       // 新增：备注信息
 }
+
+// 干员档案数据接口
+export interface CharacterItem {
+    name: string;
+    engName: string;
+    race: string;
+    faction: string;
+    remark: string;
+    profession: string;
+}
+
+export interface CharacterData {
+    items: CharacterItem[];
+}
