@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import './App.css';
 import rawData from './data/matrix_data.json';
 import tradeData from './data/trade_data.json';
@@ -9,6 +9,84 @@ import type { AppData, LocationStat, LocationKey, TradeItem, WeaponData, Charact
 const appData = rawData as unknown as AppData;
 const weaponItems = appData.items;
 const characterData = charRawData as unknown as CharacterData;
+
+// ==========================================
+// 加载遮罩层组件
+// ==========================================
+type LoadingPhase = 'loading' | 'expand' | 'fadeout' | 'done';
+
+interface LoadingScreenProps {
+    onComplete: () => void;
+    minDuration?: number;
+}
+
+function LoadingScreen({ onComplete, minDuration = 2500 }: LoadingScreenProps) {
+    const [progress, setProgress] = useState(0);
+    const [phase, setPhase] = useState<LoadingPhase>('loading');
+
+    useEffect(() => {
+        const startTime = Date.now();
+        const totalDuration = minDuration;
+        const progressInterval = 30;
+
+        const updateProgress = () => {
+            const elapsed = Date.now() - startTime;
+            const newProgress = Math.min((elapsed / totalDuration) * 100, 100);
+            setProgress(newProgress);
+
+            if (newProgress >= 100) {
+                clearInterval(timer);
+                // 进入展开阶段
+                setPhase('expand');
+                // 展开动画持续 800ms 后进入淡出
+                setTimeout(() => {
+                    setPhase('fadeout');
+                    // 淡出动画持续 500ms 后完成
+                    setTimeout(() => {
+                        setPhase('done');
+                        onComplete();
+                    }, 500);
+                }, 800);
+            }
+        };
+
+        const timer = setInterval(updateProgress, progressInterval);
+        return () => clearInterval(timer);
+    }, [minDuration, onComplete]);
+
+    if (phase === 'done') return null;
+
+    return (
+        <div className={`loading-overlay ${phase}`}>
+            {/* 背景层 - 展开阶段从左到右填充黄色 */}
+            <div className="loading-bg-expand" style={{ width: phase === 'loading' ? '0%' : '100%' }} />
+
+            {/* 进度条容器 - 最左侧垂直进度条 */}
+            <div className="loading-progress-container">
+                <div className="loading-progress-bar">
+                    <div className="loading-progress-fill" style={{ height: `${progress}%` }} />
+                    <div className="loading-progress-head" style={{ top: `${progress}%` }}>
+                        <span className="loading-head-percent">{Math.floor(progress)}%</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* 中心内容 */}
+            <div className="loading-content">
+                <img src="logo.svg" alt="logo" className="loading-logo-img" />
+                <div className="loading-logo">ENDFIELD</div>
+                <div className="loading-subtitle">INDUSTRY</div>
+            </div>
+
+            {/* 底部装饰 */}
+            <div className="loading-footer">
+                <div className="loading-line" />
+                <span>LOADING SYSTEM</span>
+                <div className="loading-line" />
+            </div>
+        </div>
+    );
+}
 
 const LOCATION_MAP: Record<LocationKey, string> = {
     loc_hub: '枢纽区',
@@ -767,30 +845,47 @@ function CharacterTool() {
 function App() {
     // 增加 'character' 页面状态
     const [activePage, setActivePage] = useState<'matrix' | 'about'| 'trade' | 'character'>('matrix');
+    // 加载状态
+    const [loadingDone, setLoadingDone] = useState(false);
+
+    const handleLoadingComplete = useCallback(() => {
+        // 延迟一帧确保过渡动画完成
+        requestAnimationFrame(() => {
+            setLoadingDone(true);
+        });
+    }, []);
 
     return (
-        <div className="app-root">
-            <header className="app-header">
-                <div className="logo-area">
-                    {/* 使用正确的图标引用 */}
-                    <img src="logo.svg" alt="logo" style={{ width: '32px', height: '32px' }} />
-                    <div className="logo-text">ENDFIELD</div>
-                    <div className="logo-sub">TOOLS</div>
+        <>
+            {/* 加载遮罩层 */}
+            {!loadingDone && (
+                <LoadingScreen onComplete={handleLoadingComplete} minDuration={2500} />
+            )}
+
+            {/* 主应用 */}
+            <div className="app-root" style={{ opacity: loadingDone ? 1 : 0, transition: 'opacity 0.3s ease-in' }}>
+                <header className="app-header">
+                    <div className="logo-area">
+                        {/* 使用正确的图标引用 */}
+                        <img src="logo.svg" alt="logo" style={{ width: '32px', height: '32px' }} />
+                        <div className="logo-text">ENDFIELD</div>
+                        <div className="logo-sub">TOOLS</div>
+                    </div>
+                    <nav className="nav-menu">
+                        <button className={`nav-item ${activePage === 'matrix' ? 'active' : ''}`} onClick={() => setActivePage('matrix')}>基质检索</button>
+                        <button className={`nav-item ${activePage === 'character' ? 'active' : ''}`} onClick={() => setActivePage('character')}>干员档案</button>
+                        <button className={`nav-item ${activePage === 'trade' ? 'active' : ''}`} onClick={() => setActivePage('trade')}>信用商店</button>
+                        <button className={`nav-item ${activePage === 'about' ? 'active' : ''}`} onClick={() => setActivePage('about')}>关于终端</button>
+                    </nav>
+                </header>
+                <div className="app-content">
+                    {activePage === 'matrix' && <MatrixTool />}
+                    {activePage === 'character' && <CharacterTool />}
+                    {activePage === 'about' && <AboutPage />}
+                    {activePage === 'trade' && <TradeTool />}
                 </div>
-                <nav className="nav-menu">
-                    <button className={`nav-item ${activePage === 'matrix' ? 'active' : ''}`} onClick={() => setActivePage('matrix')}>基质检索</button>
-                    <button className={`nav-item ${activePage === 'character' ? 'active' : ''}`} onClick={() => setActivePage('character')}>干员档案</button>
-                    <button className={`nav-item ${activePage === 'trade' ? 'active' : ''}`} onClick={() => setActivePage('trade')}>信用商店</button>
-                    <button className={`nav-item ${activePage === 'about' ? 'active' : ''}`} onClick={() => setActivePage('about')}>关于终端</button>
-                </nav>
-            </header>
-            <div className="app-content">
-                {activePage === 'matrix' && <MatrixTool />}
-                {activePage === 'character' && <CharacterTool />}
-                {activePage === 'about' && <AboutPage />}
-                {activePage === 'trade' && <TradeTool />}
             </div>
-        </div>
+        </>
     );
 }
 

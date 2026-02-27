@@ -36,3 +36,5 @@ dist-ssr
 
 # TS config | TS生成文件
 *.tsbuildinfo
+CLAUDE.md
+/product-images
