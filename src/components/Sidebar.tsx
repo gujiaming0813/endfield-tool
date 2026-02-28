@@ -55,13 +55,12 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
                 ))}
             </nav>
 
-            {/* 底部装饰 */}
+            {/* 底部装饰 - 仅展开时显示 */}
             <div className="sidebar-footer">
                 <div className="footer-text">
                     <span className="tech-decoration">/// ENDFIELD ///</span>
                     <span className="tech-decoration">INDUSTRY</span>
                 </div>
-                <div className="footer-line" />
             </div>
         </aside>
     );

@@ -379,22 +379,6 @@ body {
     white-space: nowrap;
 }
 
-.footer-line {
-    width: 24px;
-    height: 2px;
-    background: var(--theme-yellow);
-    opacity: 0.5;
-    display: none;
-}
-
-.sidebar:not(:hover) .footer-line {
-    display: block;
-}
-
-.sidebar:hover .footer-line {
-    display: none;
-}
-
 /* Main Content Area */
 .app-main {
     flex: 1;
@@ -582,7 +566,7 @@ tr.star-六 { background: rgba(255, 77, 79, 0.05); }
    Triggered on screens narrower than 768px
    ========================================================================== */
 @media screen and (max-width: 768px) {
-    /* 1. 恢复页面级滚动 */
+    /* 1. 页面级滚动 */
     body, .app-root {
         height: auto;
         min-height: 100vh;
@@ -590,43 +574,256 @@ tr.star-六 { background: rgba(255, 77, 79, 0.05); }
         -webkit-overflow-scrolling: touch;
     }
 
-    /* 2. 侧边栏移动端适配 */
+    .app-root.mobile {
+        flex-direction: column;
+    }
+
+    /* 隐藏桌面端侧边栏 */
     .sidebar {
-        position: fixed;
-        left: 0;
+        display: none;
+    }
+
+    /* 2. 手机端顶部导航栏 */
+    .mobile-header {
+        position: sticky;
         top: 0;
-        height: 100vh;
-        z-index: 1000;
-        width: 56px;
+        left: 0;
+        right: 0;
+        height: 56px;
+        background: rgba(18, 18, 20, 0.95);
+        border-bottom: 1px solid var(--border-tech);
+        z-index: 100;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
     }
 
-    .sidebar:hover {
-        width: 200px;
-        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);
+    /* 导航展开时，顶部栏置于最上层 */
+    .mobile-header.nav-open {
+        z-index: 1001;
     }
 
-    .sidebar-header {
-        padding: 12px;
-        min-height: 56px;
+    .mobile-header-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 100%;
+        padding: 0 16px;
     }
 
-    .sidebar-nav {
-        padding: 12px 0;
+    .mobile-logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
 
-    .sidebar-nav .nav-item {
-        padding: 10px 12px;
-        font-size: 0.85em;
-    }
-
-    .nav-icon {
+    .mobile-logo-icon {
         width: 28px;
+        height: 28px;
     }
 
-    /* 3. 主内容区偏移适配 */
-    .app-main {
-        margin-left: 56px;
-        width: calc(100% - 56px);
+    .mobile-logo-text {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+    }
+
+    .logo-text-main {
+        font-family: 'JetBrains Mono';
+        font-weight: bold;
+        font-size: 1em;
+        color: var(--text-primary);
+        letter-spacing: -0.5px;
+    }
+
+    .logo-text-sub {
+        font-family: 'JetBrains Mono';
+        font-size: 0.6em;
+        color: var(--theme-yellow);
+        background: rgba(255, 193, 7, 0.1);
+        padding: 1px 4px;
+        border-radius: 2px;
+        width: fit-content;
+    }
+
+    /* 汉堡菜单按钮 */
+    .mobile-menu-btn {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        background: transparent;
+        border: 1px solid var(--border-tech);
+        cursor: pointer;
+        padding: 8px;
+    }
+
+    .menu-line {
+        width: 18px;
+        height: 2px;
+        background: var(--text-secondary);
+        transition: all 0.3s ease;
+        transform-origin: center;
+    }
+
+    .mobile-menu-btn.open .menu-line:nth-child(1) {
+        transform: translateY(7px) rotate(45deg);
+    }
+
+    .mobile-menu-btn.open .menu-line:nth-child(2) {
+        opacity: 0;
+    }
+
+    .mobile-menu-btn.open .menu-line:nth-child(3) {
+        transform: translateY(-7px) rotate(-45deg);
+    }
+
+    /* 3. 全屏导航层 */
+    .mobile-nav-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        pointer-events: none;
+        visibility: hidden;
+    }
+
+    .mobile-nav-overlay.open {
+        pointer-events: auto;
+        visibility: visible;
+    }
+
+    /* 背景遮罩 */
+    .mobile-nav-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .mobile-nav-overlay.open .mobile-nav-backdrop {
+        opacity: 1;
+    }
+
+    /* 导航内容 - 从左上角向右下角展开 */
+    .mobile-nav-content {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(18, 18, 20, 0.98);
+        display: flex;
+        flex-direction: column;
+        padding-top: 56px; /* 为顶部栏留出空间 */
+        /* 关键：从左上角开始 clip-path 动画 */
+        clip-path: circle(0% at 48px 28px);
+        transition: clip-path 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .mobile-nav-overlay.open .mobile-nav-content {
+        clip-path: circle(150% at 48px 28px);
+    }
+
+    /* 导航列表 */
+    .mobile-nav-list {
+        flex: 1;
+        padding: 20px 0;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .mobile-nav-item {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px 20px;
+        margin: 0 16px;
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+        font-family: 'JetBrains Mono';
+        font-size: 1em;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: left;
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+
+    .mobile-nav-overlay.open .mobile-nav-item {
+        animation: slideInNav 0.4s ease forwards;
+    }
+
+    @keyframes slideInNav {
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    .mobile-nav-item:hover,
+    .mobile-nav-item.active {
+        color: var(--text-primary);
+    }
+
+    .mobile-nav-item.active {
+        background: rgba(255, 193, 7, 0.15);
+        color: var(--theme-yellow);
+    }
+
+    .nav-item-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        flex-shrink: 0;
+    }
+
+    .nav-item-label {
+        flex: 1;
+        white-space: nowrap;
+    }
+
+    .nav-item-arrow {
+        color: var(--text-secondary);
+        opacity: 0.5;
+        transition: all 0.2s;
+    }
+
+    .mobile-nav-item:hover .nav-item-arrow,
+    .mobile-nav-item.active .nav-item-arrow {
+        opacity: 1;
+        transform: translateX(4px);
+    }
+
+    .mobile-nav-item.active .nav-item-arrow {
+        color: var(--theme-yellow);
+    }
+
+    /* 导航底部 */
+    .mobile-nav-footer {
+        padding: 20px;
+        border-top: 1px solid var(--border-tech);
+        text-align: center;
+    }
+
+    .mobile-nav-footer .tech-decoration {
+        font-family: 'JetBrains Mono';
+        font-size: 0.65em;
+        color: #444;
+        letter-spacing: 1px;
+    }
+
+    /* 4. 主内容区 */
+    .app-main.mobile {
+        margin-left: 0;
+        width: 100%;
+        padding-top: 0;
     }
 
     .app-content {
@@ -635,14 +832,14 @@ tr.star-六 { background: rgba(255, 77, 79, 0.05); }
         flex: none;
     }
 
-    /* 3. 布局改为上下堆叠 (Stack Layout) */
+    /* 5. 布局改为上下堆叠 */
     .app-layout {
         display: flex;
         flex-direction: column;
         padding: 15px;
         height: auto;
         gap: 20px;
-        padding-bottom: calc(20px + env(safe-area-inset-bottom)); /* iOS 底部安全区 */
+        padding-bottom: calc(20px + env(safe-area-inset-bottom));
     }
 
     .about-layout {
@@ -652,15 +849,14 @@ tr.star-六 { background: rgba(255, 77, 79, 0.05); }
         padding-bottom: calc(20px + env(safe-area-inset-bottom));
     }
 
-    /* 4. 面板自适应高度 */
+    /* 6. 面板自适应高度 */
     .tech-panel, .about-card {
         height: auto;
         max-height: none;
-        overflow: visible; /* 让内容决定高度 */
+        overflow: visible;
     }
 
-    /* 5. 侧边栏 (筛选器) 限高 + 内部滚动 */
-    /* 防止筛选器占满屏幕，给用户留出看结果的空间 */
+    /* 7. 筛选器限高 */
     .sidebar-panel .panel-scroll-content {
         max-height: 35vh;
         overflow-y: auto;
@@ -668,7 +864,7 @@ tr.star-六 { background: rgba(255, 77, 79, 0.05); }
         padding-bottom: 15px;
     }
 
-    /* 6. 内容区域 (结果) 不限高 */
+    /* 8. 内容区域不限高 */
     .content-panel .panel-scroll-content,
     .card-scroll-body {
         height: auto;
@@ -676,7 +872,7 @@ tr.star-六 { background: rgba(255, 77, 79, 0.05); }
         max-height: none;
     }
 
-    /* 7. 按钮与文字适配 */
+    /* 9. 按钮与文字适配 */
     .button-grid {
         grid-template-columns: repeat(auto-fill, minmax(75px, 1fr));
         gap: 8px;
@@ -689,7 +885,7 @@ tr.star-六 { background: rgba(255, 77, 79, 0.05); }
     /* 地区卡片适配 */
     .location-results { gap: 8px; }
     .location-highlight {
-        flex: 1 1 calc(50% - 8px); /* 双列显示 */
+        flex: 1 1 calc(50% - 8px);
         min-width: 0;
     }
 }

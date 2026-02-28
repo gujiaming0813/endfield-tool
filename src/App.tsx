@@ -7,6 +7,8 @@ import charRawData from './data/character_data.json';
 import type { AppData, LocationStat, LocationKey, TradeItem, WeaponData, CharacterData } from './types';
 // 引入侧边栏组件
 import { Sidebar } from './components/Sidebar';
+// 引入手机端导航组件
+import { MobileNav } from './components/MobileNav';
 
 const appData = rawData as unknown as AppData;
 const weaponItems = appData.items;
@@ -849,6 +851,26 @@ function App() {
     const [activePage, setActivePage] = useState<'matrix' | 'about'| 'trade' | 'character'>('matrix');
     // 加载状态
     const [loadingDone, setLoadingDone] = useState(false);
+    // 移动端菜单状态
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    // 是否为移动端
+    const [isMobile, setIsMobile] = useState(false);
+
+    // 检测设备类型
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    // 关闭移动端菜单（导航时）
+    const handleNavigate = (page: 'matrix' | 'about' | 'trade' | 'character') => {
+        setActivePage(page);
+        setMobileMenuOpen(false);
+    };
 
     const handleLoadingComplete = useCallback(() => {
         // 延迟一帧确保过渡动画完成
@@ -865,11 +887,22 @@ function App() {
             )}
 
             {/* 主应用 */}
-            <div className="app-root" style={{ opacity: loadingDone ? 1 : 0, transition: 'opacity 0.3s ease-in' }}>
-                {/* 侧边栏导航 */}
-                <Sidebar activePage={activePage} onNavigate={setActivePage} />
+            <div className={`app-root ${isMobile ? 'mobile' : 'desktop'}`} style={{ opacity: loadingDone ? 1 : 0, transition: 'opacity 0.3s ease-in' }}>
+                {/* 桌面端：侧边栏导航 */}
+                {!isMobile && <Sidebar activePage={activePage} onNavigate={setActivePage} />}
+
+                {/* 移动端：顶部导航栏 */}
+                {isMobile && (
+                    <MobileNav
+                        activePage={activePage}
+                        onNavigate={handleNavigate}
+                        isOpen={mobileMenuOpen}
+                        onToggle={() => setMobileMenuOpen(prev => !prev)}
+                    />
+                )}
+
                 {/* 主内容区 */}
-                <main className="app-main">
+                <main className={`app-main ${isMobile ? 'mobile' : ''}`}>
                     {activePage === 'matrix' && <MatrixTool />}
                     {activePage === 'character' && <CharacterTool />}
                     {activePage === 'about' && <AboutPage />}
