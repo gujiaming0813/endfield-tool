@@ -5,6 +5,8 @@ import tradeData from './data/trade_data.json';
 import charRawData from './data/character_data.json';
 // 1. 引入 WeaponData 类型
 import type { AppData, LocationStat, LocationKey, TradeItem, WeaponData, CharacterData } from './types';
+// 引入侧边栏组件
+import { Sidebar } from './components/Sidebar';
 
 const appData = rawData as unknown as AppData;
 const weaponItems = appData.items;
@@ -864,26 +866,15 @@ function App() {
 
             {/* 主应用 */}
             <div className="app-root" style={{ opacity: loadingDone ? 1 : 0, transition: 'opacity 0.3s ease-in' }}>
-                <header className="app-header">
-                    <div className="logo-area">
-                        {/* 使用正确的图标引用 */}
-                        <img src="logo.svg" alt="logo" style={{ width: '32px', height: '32px' }} />
-                        <div className="logo-text">ENDFIELD</div>
-                        <div className="logo-sub">TOOLS</div>
-                    </div>
-                    <nav className="nav-menu">
-                        <button className={`nav-item ${activePage === 'matrix' ? 'active' : ''}`} onClick={() => setActivePage('matrix')}>基质检索</button>
-                        <button className={`nav-item ${activePage === 'character' ? 'active' : ''}`} onClick={() => setActivePage('character')}>干员档案</button>
-                        <button className={`nav-item ${activePage === 'trade' ? 'active' : ''}`} onClick={() => setActivePage('trade')}>信用商店</button>
-                        <button className={`nav-item ${activePage === 'about' ? 'active' : ''}`} onClick={() => setActivePage('about')}>关于终端</button>
-                    </nav>
-                </header>
-                <div className="app-content">
+                {/* 侧边栏导航 */}
+                <Sidebar activePage={activePage} onNavigate={setActivePage} />
+                {/* 主内容区 */}
+                <main className="app-main">
                     {activePage === 'matrix' && <MatrixTool />}
                     {activePage === 'character' && <CharacterTool />}
                     {activePage === 'about' && <AboutPage />}
                     {activePage === 'trade' && <TradeTool />}
-                </div>
+                </main>
             </div>
         </>
     );
