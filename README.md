@@ -1,52 +1,113 @@
-# Endfield Matrix Tool | 终末地基质筛选终端
+# 终末地基质筛选终端
 
-> 专为《明日方舟：终末地》设计的基质/武器合成检索工具。
-> A fan-made matrix construction simulator for Arknights: Endfield.
+> 专为《明日方舟：终末地》设计的数据查询辅助工具
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![React](https://img.shields.io/badge/React-18-blue)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
-![Vite](https://img.shields.io/badge/Vite-6-purple)
-
-## 🔗 在线演示 (Live Demo)
-
-**[点击访问在线终端](https://gujiaming0813.github.io/endfield-tool/)**
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-6-646CFF?logo=vite)](https://vitejs.dev/)
 
 ---
 
-## 📖 项目简介 (Introduction)
+## 在线演示
 
-本项目是一个仿照游戏内 UI 风格开发的 Web 工具，旨在帮助玩家快速检索武器合成配方。用户可以通过选择**适配角色**或**武器属性**（基础、附加、技能），快速找到对应的武器，并计算出最佳的素材刷取地点（枢纽区、源石研究园等）。
+**[https://gujiaming0813.github.io/endfield-tool/](https://gujiaming0813.github.io/endfield-tool/)**
 
-## ✨ 核心功能 (Features)
+---
 
-* **🕵️‍♂️ 角色适配反查**：
-    * 支持点击角色名称（Tag 标签），一键筛选该角色可使用的所有武器。
-    * 支持多角色数据解析与高亮显示。
-* **🧬 属性组合筛选**：
-    * **A 基础属性**：支持多选（最多 3 项）。
-    * **B/C 附加与技能**：互斥选择逻辑，精准定位配方。
-    * **智能联动**：支持“角色 + 属性”的交集筛选（例如：查找“管理员”能用的“敏捷”武器）。
-* **📍 最佳产地定位**：
-    * 根据筛选结果，自动统计并计算出该组合产出率最高的地图区域。
-* **🎨 沉浸式 UI 设计**：
-    * 复刻《终末地》工业科技风格。
-    * JetBrains Mono 编程字体 + 动态切角按钮 + 呼吸灯效。
-    * 响应式布局，适配桌面端与部分移动端。
+## 功能特性
 
-## 🛠️ 技术栈 (Tech Stack)
+### 基质检索终端
+- 角色适配反查：点击角色名称，一键筛选可使用的武器
+- 属性组合筛选：基础属性（最多3项）、附加属性、技能属性
+- 智能产地定位：自动计算最佳刷取地点
 
-* **核心框架**: React 18 + TypeScript
-* **构建工具**: Vite
-* **包管理器**: pnpm
-* **样式方案**: CSS (Grid/Flexbox) + CSS Variables + Clip-path (实现切角效果)
-* **部署托管**: GitHub Pages
+### 干员档案终端
+- 阵营、种族、职业多维筛选
+- 关联查询，快速定位
 
-## 🚀 本地运行 (Getting Started)
+### 信用商店
+- 商品性价比排行
+- 支持多维度排序（价格、体力、性价比）
 
-如果您想在本地运行或修改本项目，请按照以下步骤操作：
+---
 
-### 1. 克隆仓库
+## 技术栈
+
+| 类别 | 技术 |
+|------|------|
+| 框架 | React 18 + TypeScript |
+| 构建 | Vite |
+| 包管理 | pnpm |
+| 样式 | CSS (Grid/Flexbox) + CSS Variables |
+| 部署 | GitHub Pages / Docker |
+
+---
+
+## 项目结构
+
+```
+src/
+├── components/         # 可复用组件
+│   ├── Icons.tsx       # SVG 图标
+│   ├── LoadingScreen.tsx
+│   ├── MobileNav.tsx   # 移动端导航
+│   └── Sidebar.tsx     # 桌面端侧边栏
+├── pages/              # 页面组件
+│   ├── MatrixTool.tsx  # 基质检索
+│   ├── CharacterTool.tsx # 干员档案
+│   ├── TradeTool.tsx   # 信用商店
+│   └── AboutPage.tsx   # 关于页面
+├── constants/          # 常量定义
+├── data/               # JSON 数据
+├── types.ts            # TypeScript 类型
+└── App.tsx             # 入口组件
+```
+
+---
+
+## 本地运行
+
 ```bash
-git clone [https://github.com/gujiaming0813/endfield-tool.git](https://github.com/gujiaming0813/endfield-tool.git)
+# 克隆仓库
+git clone https://github.com/gujiaming0813/endfield-tool.git
 cd endfield-tool
+
+# 安装依赖
+pnpm install
+
+# 启动开发服务器
+pnpm dev
+
+# 构建生产版本
+pnpm build
+```
+
+---
+
+## Docker 部署
+
+```bash
+# 构建镜像
+docker build -t endfield-tool .
+
+# 运行容器
+docker run -d -p 80:80 endfield-tool
+```
+
+---
+
+## 致谢
+
+- [b站：皇战萌新轲](https://space.bilibili.com/329400340) - 基质数据来源
+- [NGA：2235hhh](https://bbs.nga.cn/nuke.php?func=ucp&uid=41796691) - 信用商店数据来源
+
+---
+
+## 许可证
+
+[MIT License](LICENSE)
+
+---
+
+> **免责声明**：本项目为玩家自制工具，与游戏官方无任何关联。
