@@ -63,12 +63,11 @@ export function MobileNav({ activePage, onNavigate, isOpen, onToggle }: MobileNa
                 <div className="mobile-nav-content">
                     {/* 导航菜单列表 - 顶部留出 header 空间 */}
                     <nav className="mobile-nav-list">
-                        {navItems.map((item, index) => (
+                        {navItems.map((item) => (
                             <button
                                 key={item.id}
                                 className={`mobile-nav-item ${activePage === item.id ? 'active' : ''}`}
                                 onClick={() => handleNavigate(item.id)}
-                                style={{ animationDelay: `${index * 0.05 + 0.2}s` }}
                             >
                                 <span className="nav-item-icon">{item.icon}</span>
                                 <span className="nav-item-label">{item.label}</span>
