@@ -73,7 +73,7 @@ export function VideoPage() {
                     <div className="video-controls">
                         {/* 搜索框 */}
                         <div className="search-box">
-                            <SearchIcon size={18} color="#888" />
+                            <SearchIcon size={18} color="currentColor" className="search-icon" />
                             <input
                                 type="text"
                                 placeholder="搜索视频标题、UP主..."
