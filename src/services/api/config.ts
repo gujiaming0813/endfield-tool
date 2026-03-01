@@ -6,7 +6,7 @@
 import axios from 'axios';
 
 // API 基础地址
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5186';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 // 创建 axios 实例
 const apiClient = axios.create({
