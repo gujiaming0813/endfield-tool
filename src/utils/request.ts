@@ -3,7 +3,7 @@
  * 自动处理 token 和错误
  */
 
-const API_BASE_URL = 'http://localhost:5186';
+const API_BASE_URL = '';
 
 interface RequestOptions {
     method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
