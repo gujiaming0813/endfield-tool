@@ -123,6 +123,36 @@ export function TradeIcon({ size = 20, color = 'currentColor', className = '' }:
     );
 }
 
+/** 隐私盾牌图标 - 安全/隐私保护符号 */
+export function ShieldIcon({ size = 20, color = 'currentColor', className = '' }: IconProps) {
+    return (
+        <svg
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className={className}
+        >
+            {/* 盾牌外框 - 切角风格 */}
+            <path
+                d="M12 2L20 5V11C20 16 16.5 20.5 12 22C7.5 20.5 4 16 4 11V5L12 2Z"
+                stroke={color}
+                strokeWidth="1.5"
+                strokeLinejoin="round"
+            />
+            {/* 勾选标记 - 表示安全 */}
+            <path
+                d="M8 12L11 15L16 9"
+                stroke={color}
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+        </svg>
+    );
+}
+
 /** 关于页面图标 - 信息终端符号 */
 export function AboutIcon({ size = 20, color = 'currentColor', className = '' }: IconProps) {
     return (
@@ -147,6 +177,93 @@ export function AboutIcon({ size = 20, color = 'currentColor', className = '' }:
             {/* 终端装饰线 */}
             <line x1="6" y1="6" x2="9" y2="6" stroke={color} strokeWidth="1.2" strokeLinecap="round" />
             <line x1="6" y1="19" x2="10" y2="19" stroke={color} strokeWidth="1.2" strokeLinecap="round" />
+        </svg>
+    );
+}
+
+/** 视频图标 - 播放按钮符号 */
+export function VideoIcon({ size = 20, color = 'currentColor', className = '' }: IconProps) {
+    return (
+        <svg
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className={className}
+        >
+            {/* 视频框 - 切角矩形 */}
+            <path
+                d="M3 4H17L21 8V20H3V4Z"
+                stroke={color}
+                strokeWidth="1.5"
+                strokeLinejoin="round"
+            />
+            {/* 切角装饰 */}
+            <path
+                d="M17 4V8H21"
+                stroke={color}
+                strokeWidth="1.5"
+                strokeLinejoin="round"
+            />
+            {/* 播放三角形 */}
+            <path
+                d="M10 9L14 12L10 15V9Z"
+                fill={color}
+            />
+        </svg>
+    );
+}
+
+/** 播放图标 - 圆形播放按钮 */
+export function PlayIcon({ size = 20, color = 'currentColor', className = '' }: IconProps) {
+    return (
+        <svg
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className={className}
+        >
+            {/* 播放三角形 */}
+            <path
+                d="M8 5.14V19.14L19 12.14L8 5.14Z"
+                fill={color}
+            />
+        </svg>
+    );
+}
+
+/** 搜索图标 */
+export function SearchIcon({ size = 20, color = 'currentColor', className = '' }: IconProps) {
+    return (
+        <svg
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className={className}
+        >
+            {/* 放大镜圆圈 */}
+            <circle
+                cx="11"
+                cy="11"
+                r="7"
+                stroke={color}
+                strokeWidth="1.8"
+            />
+            {/* 手柄 */}
+            <line
+                x1="16"
+                y1="16"
+                x2="21"
+                y2="21"
+                stroke={color}
+                strokeWidth="1.8"
+                strokeLinecap="round"
+            />
         </svg>
     );
 }

@@ -1,0 +1,83 @@
+{
+    "categories": ["全部", "攻略教程", "角色解析", "机制讲解", "基建指南", "娱乐二创"],
+    "items": [
+        {
+            "bvid": "BV1QacYzYEDn",
+            "title": "求求你别再让我失忆了……",
+            "cover": "http://i2.hdslb.com/bfs/archive/b31c5868d7421bf38cb83462b6a59629bbec91c3.jpg",
+            "description": "",
+            "duration": 573,
+            "ownerName": "童子军大王",
+            "url": "https://www.bilibili.com/video/BV1QacYzYEDn",
+            "viewCount": 137374,
+            "likeCount": 4665,
+            "publishTime": "2026-02-12T16:30:00+08:00",
+            "category": "娱乐二创"
+        },
+        {
+            "bvid": "BV1example001",
+            "title": "【终末地】新手入坑必看！全方位基础攻略",
+            "cover": "https://i0.hdslb.com/bfs/archive/placeholder1.jpg",
+            "description": "从零开始的终末地之旅，涵盖基础操作、资源获取、角色培养等核心内容",
+            "duration": 932,
+            "ownerName": "攻略组",
+            "url": "https://www.bilibili.com/video/BV1example001",
+            "viewCount": 52340,
+            "likeCount": 2100,
+            "publishTime": "2026-01-15T10:00:00+08:00",
+            "category": "攻略教程"
+        },
+        {
+            "bvid": "BV1example002",
+            "title": "终末地全角色强度榜2024版",
+            "cover": "https://i0.hdslb.com/bfs/archive/placeholder2.jpg",
+            "description": "基于最新版本的全角色综合强度评估与抽取建议",
+            "duration": 1335,
+            "ownerName": "数据帝",
+            "url": "https://www.bilibili.com/video/BV1example002",
+            "viewCount": 89500,
+            "likeCount": 3500,
+            "publishTime": "2026-01-20T14:00:00+08:00",
+            "category": "角色解析"
+        },
+        {
+            "bvid": "BV1example003",
+            "title": "基质系统深度解析：如何高效刷取",
+            "cover": "https://i0.hdslb.com/bfs/archive/placeholder3.jpg",
+            "description": "详细解读基质掉落机制，教你如何高效获取所需材料",
+            "duration": 1125,
+            "ownerName": "技术宅",
+            "url": "https://www.bilibili.com/video/BV1example003",
+            "viewCount": 45600,
+            "likeCount": 1800,
+            "publishTime": "2026-02-01T09:30:00+08:00",
+            "category": "机制讲解"
+        },
+        {
+            "bvid": "BV1example004",
+            "title": "基建布局最优解：产能最大化方案",
+            "cover": "https://i0.hdslb.com/bfs/archive/placeholder4.jpg",
+            "description": "从入门到精通，手把手教你打造高效基建",
+            "duration": 1500,
+            "ownerName": "建筑师",
+            "url": "https://www.bilibili.com/video/BV1example004",
+            "viewCount": 67800,
+            "likeCount": 2900,
+            "publishTime": "2026-02-05T16:00:00+08:00",
+            "category": "基建指南"
+        },
+        {
+            "bvid": "BV1example005",
+            "title": "【终末地】官方PV完整版",
+            "cover": "https://i0.hdslb.com/bfs/archive/placeholder5.jpg",
+            "description": "明日方舟：终末地 官方宣传PV",
+            "duration": 225,
+            "ownerName": "鹰角网络",
+            "url": "https://www.bilibili.com/video/BV1example005",
+            "viewCount": 520000,
+            "likeCount": 28000,
+            "publishTime": "2025-12-01T12:00:00+08:00",
+            "category": "娱乐二创"
+        }
+    ]
+}

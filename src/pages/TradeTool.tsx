@@ -69,23 +69,20 @@ export function TradeTool() {
                                     <tr>
                                         <th>商品名称</th>
                                         <th
-                                            className="sortable-th"
+                                            className={`sortable-th ${sortKey === 'price' ? 'active' : ''}`}
                                             onClick={() => handleSort('price')}
-                                            style={{ cursor: 'pointer', color: sortKey === 'price' ? 'var(--theme-yellow)' : 'inherit' }}
                                         >
                                             信用价格 {getSortIcon('price')}
                                         </th>
                                         <th
-                                            className="sortable-th"
+                                            className={`sortable-th ${sortKey === 'stamina' ? 'active' : ''}`}
                                             onClick={() => handleSort('stamina')}
-                                            style={{ cursor: 'pointer', color: sortKey === 'stamina' ? 'var(--theme-yellow)' : 'inherit' }}
                                         >
                                             等效体力 {getSortIcon('stamina')}
                                         </th>
                                         <th
-                                            className="sortable-th"
+                                            className={`sortable-th ${sortKey === 'efficiency' ? 'active' : ''}`}
                                             onClick={() => handleSort('efficiency')}
-                                            style={{ cursor: 'pointer', color: sortKey === 'efficiency' ? 'var(--theme-yellow)' : 'inherit' }}
                                         >
                                             性价比 (体力/币) {getSortIcon('efficiency')}
                                         </th>

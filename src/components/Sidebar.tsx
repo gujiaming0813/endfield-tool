@@ -4,9 +4,9 @@
  * 工业科技风格：深色背景 + 金黄主题色
  */
 
-import { MatrixIcon, CharacterIcon, TradeIcon, AboutIcon } from './Icons';
+import { MatrixIcon, CharacterIcon, TradeIcon, AboutIcon, VideoIcon } from './Icons';
 
-type PageType = 'matrix' | 'character' | 'trade' | 'about';
+type PageType = 'matrix' | 'character' | 'trade' | 'video' | 'about';
 
 interface SidebarProps {
     activePage: PageType;
@@ -23,6 +23,7 @@ const navItems: NavItem[] = [
     { id: 'matrix', label: '基质检索', icon: <MatrixIcon size={22} /> },
     { id: 'character', label: '干员档案', icon: <CharacterIcon size={22} /> },
     { id: 'trade', label: '信用商店', icon: <TradeIcon size={22} /> },
+    { id: 'video', label: '精品视频', icon: <VideoIcon size={22} /> },
     { id: 'about', label: '关于终端', icon: <AboutIcon size={22} /> },
 ];
 

@@ -53,3 +53,35 @@ export interface CharacterItem {
 export interface CharacterData {
     items: CharacterItem[];
 }
+
+// 精品视频数据接口 - 对接后端 BilibiliVideoInfo
+export interface VideoItem {
+    /** 视频BV号 */
+    bvid: string;
+    /** 视频标题 */
+    title: string;
+    /** 视频封面URL */
+    cover: string;
+    /** 视频描述 */
+    description?: string | null;
+    /** 视频时长（秒） */
+    duration: number;
+    /** UP主昵称 */
+    ownerName: string;
+    /** 视频跳转链接 */
+    url: string;
+    /** 播放量 */
+    viewCount: number;
+    /** 点赞数 */
+    likeCount: number;
+    /** 发布时间 (ISO 8601 格式) */
+    publishTime: string;
+    /** 视频分类 (前端扩展字段，可选) */
+    category?: string;
+}
+
+export interface VideoData {
+    /** 所有分类 (前端扩展) */
+    categories: string[];
+    items: VideoItem[];
+}

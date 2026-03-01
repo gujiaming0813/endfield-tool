@@ -2,6 +2,8 @@
  * 关于页面
  */
 
+import { ShieldIcon } from '../components/Icons';
+
 export function AboutPage() {
     return (
         <div className="about-layout fade-in">
@@ -16,7 +18,7 @@ export function AboutPage() {
                     </p>
 
                     <div className="privacy-badge">
-                        <span className="shield-icon">🛡️</span>
+                        <ShieldIcon size={16} color="#52c41a" />
                         隐私声明：本工具为纯前端应用，无后端数据采集
                     </div>
 

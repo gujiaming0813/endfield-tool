@@ -9,15 +9,17 @@ import './App.css';
 import { Sidebar } from './components/Sidebar';
 import { MobileNav } from './components/MobileNav';
 import { LoadingScreen } from './components/LoadingScreen';
+import { ContourBackground } from './components/ContourBackground';
 
 // 页面组件
 import { MatrixTool } from './pages/MatrixTool';
 import { CharacterTool } from './pages/CharacterTool';
 import { TradeTool } from './pages/TradeTool';
+import { VideoPage } from './pages/VideoPage';
 import { AboutPage } from './pages/AboutPage';
 
 // 页面类型定义
-type PageType = 'matrix' | 'character' | 'trade' | 'about';
+type PageType = 'matrix' | 'character' | 'trade' | 'video' | 'about';
 
 function App() {
     // 当前页面状态
@@ -61,6 +63,8 @@ function App() {
                 return <CharacterTool />;
             case 'trade':
                 return <TradeTool />;
+            case 'video':
+                return <VideoPage />;
             case 'about':
                 return <AboutPage />;
             default:
@@ -74,6 +78,9 @@ function App() {
             {!loadingDone && (
                 <LoadingScreen onComplete={handleLoadingComplete} minDuration={2500} />
             )}
+
+            {/* 等高线背景 */}
+            <ContourBackground opacity={0.06} color="#ffc107" />
 
             {/* 主应用 */}
             <div
