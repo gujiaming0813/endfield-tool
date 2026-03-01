@@ -267,3 +267,101 @@ export function SearchIcon({ size = 20, color = 'currentColor', className = '' }
         </svg>
     );
 }
+
+/** 编辑图标 - 铅笔符号 */
+export function EditIcon({ size = 20, color = 'currentColor', className = '' }: IconProps) {
+    return (
+        <svg
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className={className}
+        >
+            {/* 铅笔主体 */}
+            <path
+                d="M4 20H8L19 9C19.5304 8.46957 19.8284 7.73913 19.8284 6.97913C19.8284 6.21913 19.5304 5.48870 19 4.95826C18.4696 4.42783 17.7391 4.12982 16.9791 4.12982C16.2191 4.12982 15.4887 4.42783 14.9583 4.95826L4 16V20Z"
+                stroke={color}
+                strokeWidth="1.5"
+                strokeLinejoin="round"
+            />
+            {/* 笔尖 */}
+            <path
+                d="M13.5 6.5L17.5 10.5"
+                stroke={color}
+                strokeWidth="1.5"
+                strokeLinecap="round"
+            />
+        </svg>
+    );
+}
+
+/** 查看图标 - 眼睛符号 */
+export function ViewIcon({ size = 20, color = 'currentColor', className = '' }: IconProps) {
+    return (
+        <svg
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className={className}
+        >
+            {/* 眼睛轮廓 */}
+            <path
+                d="M2 12C2 12 5 5 12 5C19 5 22 12 22 12C22 12 19 19 12 19C5 19 2 12 2 12Z"
+                stroke={color}
+                strokeWidth="1.5"
+                strokeLinejoin="round"
+            />
+            {/* 瞳孔 */}
+            <circle
+                cx="12"
+                cy="12"
+                r="3"
+                stroke={color}
+                strokeWidth="1.5"
+            />
+        </svg>
+    );
+}
+
+/** 删除图标 - 垃圾桶符号 */
+export function DeleteIcon({ size = 20, color = 'currentColor', className = '' }: IconProps) {
+    return (
+        <svg
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className={className}
+        >
+            {/* 垃圾桶主体 */}
+            <path
+                d="M5 7H19L18 20H6L5 7Z"
+                stroke={color}
+                strokeWidth="1.5"
+                strokeLinejoin="round"
+            />
+            {/* 盖子 */}
+            <path
+                d="M3 7H21"
+                stroke={color}
+                strokeWidth="1.5"
+                strokeLinecap="round"
+            />
+            {/* 把手 */}
+            <path
+                d="M8 7V5C8 4 9 3 12 3C15 3 16 4 16 5V7"
+                stroke={color}
+                strokeWidth="1.5"
+                strokeLinejoin="round"
+            />
+            {/* 内部线条 */}
+            <line x1="10" y1="11" x2="10" y2="16" stroke={color} strokeWidth="1.2" strokeLinecap="round" />
+            <line x1="14" y1="11" x2="14" y2="16" stroke={color} strokeWidth="1.2" strokeLinecap="round" />
+        </svg>
+    );
+}
