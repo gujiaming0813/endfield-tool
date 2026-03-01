@@ -20,16 +20,13 @@ export function LoginPage() {
         setError('');
         setLoading(true);
 
-        // 模拟网络延迟
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        const success = login(username, password);
+        const result = await login(username, password);
         setLoading(false);
 
-        if (success) {
+        if (result.success) {
             navigate('/admin');
         } else {
-            setError('用户名或密码错误');
+            setError(result.message || '登录失败');
         }
     };
 

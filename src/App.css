@@ -1300,6 +1300,7 @@ tr.star-六 { background: rgba(255, 77, 79, 0.05); }
 .video-stats {
     display: flex;
     gap: 12px;
+    margin-left: auto;
 }
 
 .stat-item {
@@ -1937,6 +1938,24 @@ tr.star-六 { background: rgba(255, 77, 79, 0.05); }
     box-shadow: 0 0 15px rgba(255, 193, 7, 0.3);
 }
 
+.btn-secondary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: var(--bg-element);
+    border: 1px solid var(--border-tech);
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+    border-color: var(--text-secondary);
+    color: var(--text-primary);
+}
+
 .btn-danger {
     display: flex;
     align-items: center;
@@ -2104,6 +2123,11 @@ tr.star-六 { background: rgba(255, 77, 79, 0.05); }
 .action-btn.delete:hover {
     border-color: #f44336;
     color: #f44336;
+}
+
+.action-btn.edit:hover {
+    border-color: #4caf50;
+    color: #4caf50;
 }
 
 .empty-state {
@@ -2280,6 +2304,124 @@ tr.star-六 { background: rgba(255, 77, 79, 0.05); }
     background: var(--bg-element);
     color: var(--text-secondary);
     border: 1px solid var(--border-tech);
+}
+
+/* ==================== 弹窗样式 ==================== */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    background: var(--bg-panel);
+    border: 1px solid var(--theme-yellow);
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    clip-path: polygon(
+        0 10px,
+        10px 0,
+        calc(100% - 10px) 0,
+        100% 10px,
+        100% calc(100% - 10px),
+        calc(100% - 10px) 100%,
+        10px 100%,
+        0 calc(100% - 10px)
+    );
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid var(--border-tech);
+    background: rgba(255, 193, 7, 0.05);
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.2em;
+    color: var(--theme-yellow);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.modal-close {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid var(--border-tech);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 1.5em;
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+    border-color: var(--theme-yellow);
+    color: var(--theme-yellow);
+}
+
+.modal-body {
+    padding: 24px 20px;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--border-tech);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.tag-checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.tag-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: var(--bg-element);
+    border: 1px solid var(--border-tech);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.9em;
+    color: var(--text-secondary);
+}
+
+.tag-checkbox:hover {
+    border-color: var(--theme-yellow);
+}
+
+.tag-checkbox input {
+    accent-color: var(--theme-yellow);
+}
+
+.tag-checkbox:has(input:checked) {
+    background: rgba(255, 193, 7, 0.1);
+    border-color: var(--theme-yellow);
+    color: var(--theme-yellow);
 }
 
 /* 响应式 */

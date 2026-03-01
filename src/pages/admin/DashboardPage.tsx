@@ -3,10 +3,46 @@
  * 展示统计数据和快捷操作
  */
 
-import videoRawData from '../../data/video_data.json';
-import type { VideoData } from '../../types';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { post } from '../../utils/request';
 
-const videoData = videoRawData as unknown as VideoData;
+interface VTagModel {
+    id: number;
+    name: string;
+    code: string;
+    description?: string;
+    sortOrder: number;
+    videoCount: number;
+}
+
+interface VTagInfoModel {
+    id: number;
+    name: string;
+    code: string;
+}
+
+interface VVideoInfoModel {
+    id: number;
+    bvid: string;
+    title: string;
+    cover: string;
+    description?: string;
+    duration: number;
+    ownerName: string;
+    url: string;
+    viewCount: number;
+    likeCount: number;
+    publishTime: string;
+    tags: VTagInfoModel[];
+}
+
+interface VideoListResponse {
+    total: number;
+    page: number;
+    pageSize: number;
+    rows: VVideoInfoModel[];
+}
 
 interface StatCardProps {
     title: string;
@@ -32,11 +68,45 @@ function StatCard({ title, value, icon, color = '#ffc107' }: StatCardProps) {
 }
 
 export function DashboardPage() {
+    const navigate = useNavigate();
+    const [videos, setVideos] = useState<VVideoInfoModel[]>([]);
+    const [tags, setTags] = useState<VTagModel[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const loadData = async () => {
+        setLoading(true);
+        try {
+            // 并行加载视频和标签数据
+            const [videosResult, tagsResult] = await Promise.all([
+                post<{ success: boolean; data?: VideoListResponse }>(
+                    '/api/Bilibili/QueryVideoList',
+                    { page:1, pageSize: 50 }
+                ),
+                post<{ success: boolean; data?: VTagModel[] }>('/api/Tags/GetTagList'),
+            ]);
+
+            if (videosResult.success && videosResult.data) {
+                setVideos(videosResult.data.rows);
+            }
+            if (tagsResult.success && tagsResult.data) {
+                setTags(tagsResult.data);
+            }
+        } catch (error) {
+            console.error('加载数据失败:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // 统计数据
-    const totalVideos = videoData.items.length;
-    const totalCategories = videoData.categories.length - 1; // 减去"全部"
-    const totalViews = videoData.items.reduce((sum, v) => sum + v.viewCount, 0);
-    const totalLikes = videoData.items.reduce((sum, v) => sum + v.likeCount, 0);
+    const totalVideos = videos.length;
+    const totalTags = tags.length;
+    const totalViews = videos.reduce((sum, v) => sum + v.viewCount, 0);
+    const totalLikes = videos.reduce((sum, v) => sum + v.likeCount, 0);
 
     // 格式化数字
     const formatNumber = (num: number): string => {
@@ -57,25 +127,25 @@ export function DashboardPage() {
             <div className="stats-grid">
                 <StatCard
                     title="视频总数"
-                    value={totalVideos}
+                    value={loading ? '...' : totalVideos}
                     icon="▶"
                     color="#ffc107"
                 />
                 <StatCard
-                    title="分类数量"
-                    value={totalCategories}
+                    title="标签数量"
+                    value={loading ? '...' : totalTags}
                     icon="◆"
                     color="#00bcd4"
                 />
                 <StatCard
                     title="总播放量"
-                    value={formatNumber(totalViews)}
+                    value={loading ? '...' : formatNumber(totalViews)}
                     icon="◎"
                     color="#4caf50"
                 />
                 <StatCard
                     title="总点赞数"
-                    value={formatNumber(totalLikes)}
+                    value={loading ? '...' : formatNumber(totalLikes)}
                     icon="♡"
                     color="#f44336"
                 />
@@ -85,15 +155,15 @@ export function DashboardPage() {
             <div className="quick-actions">
                 <h2>快捷操作 // QUICK ACTIONS</h2>
                 <div className="actions-grid">
-                    <button className="action-card">
+                    <button className="action-card" onClick={() => navigate('/admin/videos')}>
                         <span className="action-icon">+</span>
                         <span className="action-label">添加视频</span>
                     </button>
-                    <button className="action-card">
+                    <button className="action-card" onClick={() => navigate('/admin/tags')}>
                         <span className="action-icon">◈</span>
                         <span className="action-label">管理标签</span>
                     </button>
-                    <button className="action-card">
+                    <button className="action-card" onClick={() => navigate('/admin/videos')}>
                         <span className="action-icon">⬡</span>
                         <span className="action-label">数据导出</span>
                     </button>
@@ -108,22 +178,29 @@ export function DashboardPage() {
             <div className="recent-section">
                 <h2>最近视频 // RECENT VIDEOS</h2>
                 <div className="recent-list">
-                    {videoData.items.slice(0, 5).map(video => (
-                        <div key={video.bvid} className="recent-item">
-                            <img
-                                src={video.cover}
-                                alt={video.title}
-                                className="recent-thumb"
-                            />
-                            <div className="recent-info">
-                                <div className="recent-title">{video.title}</div>
-                                <div className="recent-meta">
-                                    <span>{video.ownerName}</span>
-                                    <span>▶ {formatNumber(video.viewCount)}</span>
+                    {loading ? (
+                        <div className="empty-state">加载中...</div>
+                    ) : videos.length === 0 ? (
+                        <div className="empty-state">暂无视频</div>
+                    ) : (
+                        videos.slice(0,5).map(video => (
+                            <div key={video.id} className="recent-item">
+                                <img
+                                    src={video.cover}
+                                    alt={video.title}
+                                    className="recent-thumb"
+                                    referrerPolicy="no-referrer"
+                                />
+                                <div className="recent-info">
+                                    <div className="recent-title">{video.title}</div>
+                                    <div className="recent-meta">
+                                        <span>{video.ownerName}</span>
+                                        <span>▶ {formatNumber(video.viewCount)}</span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        ))
+                    )}
                 </div>
             </div>
         </div>

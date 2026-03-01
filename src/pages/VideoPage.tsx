@@ -1,15 +1,47 @@
 /**
  * 精品视频页面
  * 展示B站精品视频，支持分类筛选和搜索功能
- * 数据模型: 对接后端 BilibiliVideoInfo
+ * 数据来源: 后端 API
  */
 
-import { useState, useMemo } from 'react';
-import videoRawData from '../data/video_data.json';
-import type { VideoData, VideoItem } from '../types';
+import { useState, useEffect, useCallback } from 'react';
+import { post } from '../utils/request';
 import { PlayIcon, SearchIcon } from '../components/Icons';
 
-const videoData = videoRawData as unknown as VideoData;
+// 视频数据模型（与后端 API 对应）
+interface VideoTag {
+    id: number;
+    name: string;
+    code: string;
+}
+
+interface VideoItem {
+    id: number;
+    bvid: string;
+    title: string;
+    cover: string;
+    description?: string;
+    duration: number;
+    ownerName: string;
+    url: string;
+    viewCount: number;
+    likeCount: number;
+    publishTime: string;
+    tags: VideoTag[];
+}
+
+interface VideoListResponse {
+    total: number;
+    page: number;
+    pageSize: number;
+    rows: VideoItem[];
+}
+
+interface TagItem {
+    id: number;
+    name: string;
+    code: string;
+}
 
 // 格式化时长 (秒 -> mm:ss)
 function formatDuration(seconds: number): string {
@@ -42,20 +74,65 @@ function formatPublishTime(isoString: string): string {
 }
 
 export function VideoPage() {
-    const [selectedCategory, setSelectedCategory] = useState('全部');
+    const [selectedTag, setSelectedTag] = useState<number | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [videos, setVideos] = useState<VideoItem[]>([]);
+    const [tags, setTags] = useState<TagItem[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [totalCount, setTotalCount] = useState(0);
 
-    // 筛选后的视频列表
-    const filteredVideos = useMemo(() => {
-        return videoData.items.filter(video => {
-            const matchCategory = selectedCategory === '全部' || video.category === selectedCategory;
-            const matchSearch = searchQuery === '' ||
-                video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                video.ownerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                (video.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
-            return matchCategory && matchSearch;
-        });
-    }, [selectedCategory, searchQuery]);
+    // 加载标签列表
+    const loadTags = useCallback(async () => {
+        try {
+            const result = await post<{ success: boolean; data?: TagItem[] }>('/api/Tags/GetTagList');
+            if (result.success && result.data) {
+                setTags(result.data);
+            }
+        } catch (error) {
+            console.error('加载标签失败:', error);
+        }
+    }, []);
+
+    // 加载视频列表
+    const loadVideos = useCallback(async () => {
+        setLoading(true);
+        try {
+            const result = await post<{ success: boolean; data?: VideoListResponse }>(
+                '/api/Bilibili/QueryVideoList',
+                {
+                    keyword: searchQuery || undefined,
+                    tagIds: selectedTag ? [selectedTag] : undefined,
+                    page: 1,
+                    pageSize: 100,
+                }
+            );
+            if (result.success && result.data) {
+                setVideos(result.data.rows);
+                setTotalCount(result.data.total);
+            }
+        } catch (error) {
+            console.error('加载视频失败:', error);
+        } finally {
+            setLoading(false);
+        }
+    }, [searchQuery, selectedTag]);
+
+    // 初始化加载
+    useEffect(() => {
+        loadTags();
+    }, [loadTags]);
+
+    // 搜索或筛选变化时加载视频
+    useEffect(() => {
+        loadVideos();
+    }, [loadVideos]);
+
+    // 获取选中的标签名称
+    const getSelectedTagName = () => {
+        if (!selectedTag) return null;
+        const tag = tags.find(t => t.id === selectedTag);
+        return tag?.name || null;
+    };
 
     // 打开视频链接
     const openVideo = (url: string) => {
@@ -91,15 +168,21 @@ export function VideoPage() {
                             )}
                         </div>
 
-                        {/* 分类筛选 */}
+                        {/* 标签筛选 */}
                         <div className="category-filters">
-                            {videoData.categories.map(cat => (
+                            <button
+                                className={`category-btn ${selectedTag === null ? 'active' : ''}`}
+                                onClick={() => setSelectedTag(null)}
+                            >
+                                全部
+                            </button>
+                            {tags.map(tag => (
                                 <button
-                                    key={cat}
-                                    className={`category-btn ${selectedCategory === cat ? 'active' : ''}`}
-                                    onClick={() => setSelectedCategory(cat)}
+                                    key={tag.id}
+                                    className={`category-btn ${selectedTag === tag.id ? 'active' : ''}`}
+                                    onClick={() => setSelectedTag(tag.id)}
                                 >
-                                    {cat}
+                                    {tag.name}
                                 </button>
                             ))}
                         </div>
@@ -107,15 +190,21 @@ export function VideoPage() {
 
                     {/* 视频计数 */}
                     <div className="video-count">
-                        共 <span className="count-number">{filteredVideos.length}</span> 个视频
-                        {selectedCategory !== '全部' && ` · ${selectedCategory}`}
+                        共 <span className="count-number">{totalCount}</span> 个视频
+                        {getSelectedTagName() && ` · ${getSelectedTagName()}`}
                         {searchQuery && ` · 搜索: "${searchQuery}"`}
                     </div>
 
                     {/* 视频网格 */}
-                    {filteredVideos.length > 0 ? (
+                    {loading ? (
+                        <div className="no-video-state">
+                            <div className="scanner-line"></div>
+                            <h2>LOADING...</h2>
+                            <p>加载中...</p>
+                        </div>
+                    ) : videos.length > 0 ? (
                         <div className="video-grid">
-                            {filteredVideos.map(video => (
+                            {videos.map(video => (
                                 <VideoCard
                                     key={video.bvid}
                                     video={video}
@@ -162,6 +251,7 @@ function VideoCard({ video, onClick }: VideoCardProps) {
                         className="cover-image"
                         onError={() => setImageError(true)}
                         loading="lazy"
+                        referrerPolicy="no-referrer"
                     />
                 )}
                 {/* 时长标签 */}
@@ -183,9 +273,9 @@ function VideoCard({ video, onClick }: VideoCardProps) {
                     <span className="video-time">{formatPublishTime(video.publishTime)}</span>
                 </div>
                 <div className="video-footer">
-                    {/* 分类标签 */}
-                    {video.category && (
-                        <span className="video-category-tag">{video.category}</span>
+                    {/* 标签 */}
+                    {video.tags && video.tags.length > 0 && (
+                        <span className="video-category-tag">{video.tags[0].name}</span>
                     )}
                     {/* 统计数据 */}
                     <div className="video-stats">
