@@ -5,75 +5,21 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { ViewIcon, DeleteIcon, SearchIcon, EditIcon } from '../../components/Icons';
-import { post } from '../../utils/request';
-
-interface VTagInfoModel {
-    id: number;
-    name: string;
-    code: string;
-}
-
-interface VTagModel {
-    id: number;
-    name: string;
-    code: string;
-    description?: string;
-    sortOrder: number;
-    videoCount: number;
-}
-
-interface VVideoInfoModel {
-    id: number;
-    bvid: string;
-    title: string;
-    cover: string;
-    description?: string;
-    duration: number;
-    ownerName: string;
-    url: string;
-    viewCount: number;
-    likeCount: number;
-    publishTime: string;
-    tags: VTagInfoModel[];
-}
-
-interface VideoListResponse {
-    total: number;
-    page: number;
-    pageSize: number;
-    rows: VVideoInfoModel[];
-}
-
-// 格式化数字
-function formatCount(count: number): string {
-    if (count >= 10000) {
-        return `${(count / 10000).toFixed(1)}万`;
-    }
-    return count.toString();
-}
-
-// 格式化日期
-function formatDate(isoString: string): string {
-    const date = new Date(isoString);
-    return date.toLocaleDateString('zh-CN');
-}
-
-// 格式化时长（秒 -> MM:SS）
-function formatDuration(seconds: number): string {
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-}
+import apiClient from '../../services/api/config';
+import { useNotification } from '../../contexts/NotificationContext';
+import { formatCount, formatDate, formatDuration } from '../../utils/format';
+import type { VideoInfo, VideoTagWithStats, VideoListResponse, ApiResponse } from '../../types';
 
 export function VideoManagementPage() {
+    const { showToast, showConfirm } = useNotification();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedTagId, setSelectedTagId] = useState<number | null>(null);
     const [selectedVideos, setSelectedVideos] = useState<Set<number>>(new Set());
-    const [videos, setVideos] = useState<VVideoInfoModel[]>([]);
-    const [tags, setTags] = useState<VTagModel[]>([]);
+    const [videos, setVideos] = useState<VideoInfo[]>([]);
+    const [tags, setTags] = useState<VideoTagWithStats[]>([]);
     const [loading, setLoading] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize] = useState(10);
+    const pageSize = 10;
     const [totalCount, setTotalCount] = useState(0);
     const [showAddModal, setShowAddModal] = useState(false);
     const [newVideoInput, setNewVideoInput] = useState('');
@@ -81,19 +27,21 @@ export function VideoManagementPage() {
 
     // 编辑视频状态
     const [showEditModal, setShowEditModal] = useState(false);
-    const [editingVideo, setEditingVideo] = useState<VVideoInfoModel | null>(null);
+    const [editingVideo, setEditingVideo] = useState<VideoInfo | null>(null);
     const [editTagIds, setEditTagIds] = useState<number[]>([]);
     const [editRefreshInfo, setEditRefreshInfo] = useState(false);
 
     // 加载标签列表
     const loadTags = useCallback(async () => {
         try {
-            const result = await post<{ success: boolean; data?: VTagModel[] }>('/api/Tags/GetTagList');
+            const result = await apiClient.post<ApiResponse<VideoTagWithStats[]>>('/api/Tags/GetTagList');
             if (result.success && result.data) {
                 setTags(result.data);
             }
         } catch (error) {
-            console.error('加载标签失败:', error);
+            if (import.meta.env.DEV) {
+                console.error('加载标签失败:', error);
+            }
         }
     }, []);
 
@@ -101,7 +49,7 @@ export function VideoManagementPage() {
     const loadVideos = useCallback(async () => {
         setLoading(true);
         try {
-            const result = await post<{ success: boolean; data?: VideoListResponse }>(
+            const result = await apiClient.post<ApiResponse<VideoListResponse>>(
                 '/api/Bilibili/QueryVideoList',
                 {
                     keyword: searchQuery || undefined,
@@ -115,11 +63,14 @@ export function VideoManagementPage() {
                 setTotalCount(result.data.total);
             }
         } catch (error) {
-            console.error('加载视频列表失败:', error);
+            if (import.meta.env.DEV) {
+                console.error('加载视频列表失败:', error);
+            }
+            showToast('加载视频列表失败', 'error');
         } finally {
             setLoading(false);
         }
-    }, [searchQuery, selectedTagId, currentPage, pageSize]);
+    }, [searchQuery, selectedTagId, currentPage, showToast]);
 
     // 初始化时加载标签
     useEffect(() => {
@@ -139,9 +90,12 @@ export function VideoManagementPage() {
 
     // 导入视频
     const handleImportVideo = async () => {
-        if (!newVideoInput.trim()) return;
+        if (!newVideoInput.trim()) {
+            showToast('请输入BV号或视频链接', 'warning');
+            return;
+        }
         try {
-            const result = await post<{ success: boolean; message?: string }>(
+            const result = await apiClient.post<ApiResponse>(
                 '/api/Bilibili/ImportVideo',
                 {
                     input: newVideoInput,
@@ -153,33 +107,41 @@ export function VideoManagementPage() {
                 setNewVideoInput('');
                 setNewVideoTagIds([]);
                 loadVideos();
+                showToast('视频导入成功', 'success');
             } else {
-                alert(result.message || '导入失败');
+                showToast(result.message || '导入失败', 'error');
             }
         } catch (error) {
-            console.error('导入视频失败:', error);
-            alert('导入失败，请稍后重试');
+            if (import.meta.env.DEV) {
+                console.error('导入视频失败:', error);
+            }
+            showToast('导入失败，请稍后重试', 'error');
         }
     };
 
     // 删除视频
-    const handleDeleteVideo = async (videoId: number) => {
-        if (!confirm('确定删除此视频吗？')) return;
+    const handleDeleteVideo = async (videoId: number, videoTitle: string) => {
+        const confirmed = await showConfirm('删除视频', `确定删除视频 "${videoTitle}" 吗？`);
+        if (!confirmed) return;
+
         try {
-            const result = await post<{ success: boolean; message?: string }>('/api/Bilibili/DeleteVideo', { videoId });
+            const result = await apiClient.post<ApiResponse>('/api/Bilibili/DeleteVideo', { videoId });
             if (result.success) {
                 loadVideos();
+                showToast('视频已删除', 'success');
             } else {
-                alert(result.message || '删除失败');
+                showToast(result.message || '删除失败', 'error');
             }
         } catch (error) {
-            console.error('删除视频失败:', error);
-            alert('删除失败，请稍后重试');
+            if (import.meta.env.DEV) {
+                console.error('删除视频失败:', error);
+            }
+            showToast('删除失败，请稍后重试', 'error');
         }
     };
 
     // 打开编辑弹窗
-    const openEditModal = (video: VVideoInfoModel) => {
+    const openEditModal = (video: VideoInfo) => {
         setEditingVideo(video);
         setEditTagIds(video.tags.map(t => t.id));
         setEditRefreshInfo(false);
@@ -190,7 +152,7 @@ export function VideoManagementPage() {
     const handleUpdateVideo = async () => {
         if (!editingVideo) return;
         try {
-            const result = await post<{ success: boolean; message?: string }>(
+            const result = await apiClient.post<ApiResponse>(
                 '/api/Bilibili/UpdateVideo',
                 {
                     videoId: editingVideo.id,
@@ -202,28 +164,53 @@ export function VideoManagementPage() {
                 setShowEditModal(false);
                 setEditingVideo(null);
                 loadVideos();
+                showToast('视频更新成功', 'success');
             } else {
-                alert(result.message || '更新失败');
+                showToast(result.message || '更新失败', 'error');
             }
         } catch (error) {
-            console.error('更新视频失败:', error);
-            alert('更新失败，请稍后重试');
+            if (import.meta.env.DEV) {
+                console.error('更新视频失败:', error);
+            }
+            showToast('更新失败，请稍后重试', 'error');
         }
     };
 
-    // 批量删除
+    // 批量删除（并行请求）
     const handleBatchDelete = async () => {
         if (selectedVideos.size === 0) return;
-        if (!confirm(`确定删除选中的 ${selectedVideos.size} 个视频吗？`)) return;
+
+        const confirmed = await showConfirm(
+            '批量删除',
+            `确定删除选中的 ${selectedVideos.size} 个视频吗？此操作不可撤销。`
+        );
+        if (!confirmed) return;
+
         try {
-            for (const videoId of selectedVideos) {
-                await post('/api/Bilibili/DeleteVideo', { videoId });
-            }
+            // 并行发送删除请求
+            const deletePromises = Array.from(selectedVideos).map(videoId =>
+                apiClient.post<ApiResponse>('/api/Bilibili/DeleteVideo', { videoId })
+            );
+
+            const results = await Promise.allSettled(deletePromises);
+
+            // 统计成功和失败数量
+            const successCount = results.filter(r => r.status === 'fulfilled').length;
+            const failCount = results.length - successCount;
+
             setSelectedVideos(new Set());
             loadVideos();
+
+            if (failCount === 0) {
+                showToast(`成功删除 ${successCount} 个视频`, 'success');
+            } else {
+                showToast(`删除完成：成功 ${successCount} 个，失败 ${failCount} 个`, 'warning');
+            }
         } catch (error) {
-            console.error('批量删除失败:', error);
-            alert('批量删除失败，请稍后重试');
+            if (import.meta.env.DEV) {
+                console.error('批量删除失败:', error);
+            }
+            showToast('批量删除失败，请稍后重试', 'error');
         }
     };
 
@@ -378,7 +365,7 @@ export function VideoManagementPage() {
                                         <div className="stats-cell">
                                             <span>▶ {formatCount(video.viewCount)}</span>
                                             <span>♡ {formatCount(video.likeCount)}</span>
-                                            <span>⏱ {formatDuration(video.duration)}</span>
+                                            <span>⏱ {formatDuration(video.duration, true)}</span>
                                         </div>
                                     </td>
                                     <td className="col-date">{formatDate(video.publishTime)}</td>
@@ -403,7 +390,7 @@ export function VideoManagementPage() {
                                             <button
                                                 className="action-btn delete"
                                                 title="删除"
-                                                onClick={() => handleDeleteVideo(video.id)}
+                                                onClick={() => handleDeleteVideo(video.id, video.title)}
                                             >
                                                 <DeleteIcon size={14} color="currentColor" />
                                             </button>

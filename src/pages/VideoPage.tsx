@@ -5,86 +5,23 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { post } from '../utils/request';
 import { PlayIcon, SearchIcon } from '../components/Icons';
-
-// 视频数据模型（与后端 API 对应）
-interface VideoTag {
-    id: number;
-    name: string;
-    code: string;
-}
-
-interface VideoItem {
-    id: number;
-    bvid: string;
-    title: string;
-    cover: string;
-    description?: string;
-    duration: number;
-    ownerName: string;
-    url: string;
-    viewCount: number;
-    likeCount: number;
-    publishTime: string;
-    tags: VideoTag[];
-}
-
-interface VideoListResponse {
-    total: number;
-    page: number;
-    pageSize: number;
-    rows: VideoItem[];
-}
-
-interface TagItem {
-    id: number;
-    name: string;
-    code: string;
-}
-
-// 格式化时长 (秒 -> mm:ss)
-function formatDuration(seconds: number): string {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
-
-// 格式化数字 (137374 -> 13.7万)
-function formatCount(count: number): string {
-    if (count >= 10000) {
-        return `${(count / 10000).toFixed(1)}万`;
-    }
-    return count.toString();
-}
-
-// 格式化发布时间
-function formatPublishTime(isoString: string): string {
-    const date = new Date(isoString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) return '今天';
-    if (diffDays === 1) return '昨天';
-    if (diffDays < 7) return `${diffDays}天前`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)}周前`;
-    if (diffDays < 365) return `${Math.floor(diffDays / 30)}个月前`;
-    return `${Math.floor(diffDays / 365)}年前`;
-}
+import apiClient from '../services/api/config';
+import { formatDuration, formatCount, formatPublishTime } from '../utils/format';
+import type { VideoInfo, VideoTag, VideoListResponse, ApiResponse } from '../types';
 
 export function VideoPage() {
     const [selectedTag, setSelectedTag] = useState<number | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
-    const [videos, setVideos] = useState<VideoItem[]>([]);
-    const [tags, setTags] = useState<TagItem[]>([]);
+    const [videos, setVideos] = useState<VideoInfo[]>([]);
+    const [tags, setTags] = useState<VideoTag[]>([]);
     const [loading, setLoading] = useState(true);
     const [totalCount, setTotalCount] = useState(0);
 
     // 加载标签列表
     const loadTags = useCallback(async () => {
         try {
-            const result = await post<{ success: boolean; data?: TagItem[] }>('/api/Tags/GetTagList');
+            const result = await apiClient.post<ApiResponse<VideoTag[]>>('/api/Tags/GetTagList');
             if (result.success && result.data) {
                 setTags(result.data);
             }
@@ -97,7 +34,7 @@ export function VideoPage() {
     const loadVideos = useCallback(async () => {
         setLoading(true);
         try {
-            const result = await post<{ success: boolean; data?: VideoListResponse }>(
+            const result = await apiClient.post<ApiResponse<VideoListResponse>>(
                 '/api/Bilibili/QueryVideoList',
                 {
                     keyword: searchQuery || undefined,
@@ -134,9 +71,9 @@ export function VideoPage() {
         return tag?.name || null;
     };
 
-    // 打开视频链接
+    // 打开视频链接（添加安全参数）
     const openVideo = (url: string) => {
-        window.open(url, '_blank');
+        window.open(url, '_blank', 'noopener,noreferrer');
     };
 
     return (
@@ -227,7 +164,7 @@ export function VideoPage() {
 
 // 视频卡片组件
 interface VideoCardProps {
-    video: VideoItem;
+    video: VideoInfo;
     onClick: () => void;
 }
 

@@ -4,16 +4,9 @@
  */
 
 import { useState, useEffect } from 'react';
-import { post } from '../../utils/request';
-
-interface VTagModel {
-    id: number;
-    name: string;
-    code: string;
-    description?: string;
-    sortOrder: number;
-    videoCount: number;
-}
+import apiClient from '../../services/api/config';
+import { useNotification } from '../../contexts/NotificationContext';
+import type { VideoTagWithStats, ApiResponse } from '../../types';
 
 // 预设颜色
 const PRESET_COLORS = [
@@ -22,7 +15,8 @@ const PRESET_COLORS = [
 ];
 
 export function TagManagementPage() {
-    const [tags, setTags] = useState<VTagModel[]>([]);
+    const { showToast, showConfirm } = useNotification();
+    const [tags, setTags] = useState<VideoTagWithStats[]>([]);
     const [loading, setLoading] = useState(false);
 
     const [newTagName, setNewTagName] = useState('');
@@ -44,12 +38,15 @@ export function TagManagementPage() {
     const loadTags = async () => {
         setLoading(true);
         try {
-            const result = await post<{ success: boolean; data?: VTagModel[] }>('/api/Tags/GetTagList');
+            const result = await apiClient.post<ApiResponse<VideoTagWithStats[]>>('/api/Tags/GetTagList');
             if (result.success && result.data) {
                 setTags(result.data);
             }
         } catch (error) {
-            console.error('加载标签失败:', error);
+            if (import.meta.env.DEV) {
+                console.error('加载标签失败:', error);
+            }
+            showToast('加载标签失败', 'error');
         } finally {
             setLoading(false);
         }
@@ -58,11 +55,11 @@ export function TagManagementPage() {
     // 添加标签
     const handleAddTag = async () => {
         if (!newTagName.trim() || !newTagCode.trim()) {
-            alert('请填写标签名称和编码');
+            showToast('请填写标签名称和编码', 'warning');
             return;
         }
         try {
-            const result = await post<{ success: boolean; message?: string }>(
+            const result = await apiClient.post<ApiResponse>(
                 '/api/Tags/CreateTag',
                 {
                     name: newTagName.trim(),
@@ -77,33 +74,41 @@ export function TagManagementPage() {
                 setNewTagDescription('');
                 setNewTagSortOrder(0);
                 loadTags();
+                showToast('标签创建成功', 'success');
             } else {
-                alert(result.message || '创建标签失败');
+                showToast(result.message || '创建标签失败', 'error');
             }
         } catch (error) {
-            console.error('创建标签失败:', error);
-            alert('创建标签失败，请稍后重试');
+            if (import.meta.env.DEV) {
+                console.error('创建标签失败:', error);
+            }
+            showToast('创建标签失败，请稍后重试', 'error');
         }
     };
 
     // 删除标签
     const handleDeleteTag = async (tagId: number, tagName: string) => {
-        if (!confirm(`确定删除标签 "${tagName}" 吗？`)) return;
+        const confirmed = await showConfirm('删除标签', `确定删除标签 "${tagName}" 吗？`);
+        if (!confirmed) return;
+
         try {
-            const result = await post<{ success: boolean; message?: string }>('/api/Tags/DeleteTag', { tagId });
+            const result = await apiClient.post<ApiResponse>('/api/Tags/DeleteTag', { tagId });
             if (result.success) {
                 loadTags();
+                showToast('标签已删除', 'success');
             } else {
-                alert(result.message || '删除标签失败');
+                showToast(result.message || '删除标签失败', 'error');
             }
         } catch (error) {
-            console.error('删除标签失败:', error);
-            alert('删除标签失败，请稍后重试');
+            if (import.meta.env.DEV) {
+                console.error('删除标签失败:', error);
+            }
+            showToast('删除标签失败，请稍后重试', 'error');
         }
     };
 
     // 开始编辑
-    const startEdit = (tag: VTagModel) => {
+    const startEdit = (tag: VideoTagWithStats) => {
         setEditingTag(tag.id);
         setEditName(tag.name);
         setEditCode(tag.code);
@@ -114,11 +119,11 @@ export function TagManagementPage() {
     // 保存编辑
     const saveEdit = async (tagId: number) => {
         if (!editName.trim() || !editCode.trim()) {
-            alert('请填写标签名称和编码');
+            showToast('请填写标签名称和编码', 'warning');
             return;
         }
         try {
-            const result = await post<{ success: boolean; message?: string }>(
+            const result = await apiClient.post<ApiResponse>(
                 '/api/Tags/UpdateTag',
                 {
                     tagId: tagId,
@@ -130,12 +135,15 @@ export function TagManagementPage() {
             if (result.success) {
                 setEditingTag(null);
                 loadTags();
+                showToast('标签更新成功', 'success');
             } else {
-                alert(result.message || '更新标签失败');
+                showToast(result.message || '更新标签失败', 'error');
             }
         } catch (error) {
-            console.error('更新标签失败:', error);
-            alert('更新标签失败，请稍后重试');
+            if (import.meta.env.DEV) {
+                console.error('更新标签失败:', error);
+            }
+            showToast('更新标签失败，请稍后重试', 'error');
         }
     };
 

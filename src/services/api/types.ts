@@ -41,13 +41,29 @@ export interface LoginInputDto {
     password: string;
 }
 
-/** 用户信息 */
+/** 用户信息（简化版，用于前端显示） */
 export interface VUserInfoModel {
     id: number;
     username: string;
     nickname?: string;
     email?: string;
+}
+
+/** 用户信息（完整版，含后端字段） */
+export interface VUserInfoFullModel {
+    id: number;
+    username: string;
+    nickname?: string;
+    email?: string;
     isActive: boolean;
+}
+
+/** 登录响应数据 */
+export interface LoginResponseData {
+    accessToken: string;
+    tokenType: string;
+    expiresIn: number;
+    user: VUserInfoModel;
 }
 
 /** 登录结果 */

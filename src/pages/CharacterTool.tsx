@@ -5,8 +5,13 @@
 import { useState, useMemo } from 'react';
 import charRawData from '../data/character_data.json';
 import type { CharacterData } from '../types';
+import { isCharacterData } from '../utils/validation';
 
-const characterData = charRawData as unknown as CharacterData;
+// 运行时验证数据结构
+if (!isCharacterData(charRawData)) {
+    throw new Error('character_data.json 数据结构无效');
+}
+const characterData = charRawData as CharacterData;
 
 export function CharacterTool() {
     const [selectedFaction, setSelectedFaction] = useState<string>('');

@@ -3,46 +3,11 @@
  * 展示统计数据和快捷操作
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { post } from '../../utils/request';
-
-interface VTagModel {
-    id: number;
-    name: string;
-    code: string;
-    description?: string;
-    sortOrder: number;
-    videoCount: number;
-}
-
-interface VTagInfoModel {
-    id: number;
-    name: string;
-    code: string;
-}
-
-interface VVideoInfoModel {
-    id: number;
-    bvid: string;
-    title: string;
-    cover: string;
-    description?: string;
-    duration: number;
-    ownerName: string;
-    url: string;
-    viewCount: number;
-    likeCount: number;
-    publishTime: string;
-    tags: VTagInfoModel[];
-}
-
-interface VideoListResponse {
-    total: number;
-    page: number;
-    pageSize: number;
-    rows: VVideoInfoModel[];
-}
+import apiClient from '../../services/api/config';
+import { formatCount } from '../../utils/format';
+import type { VideoInfo, VideoTagWithStats, VideoListResponse, ApiResponse } from '../../types';
 
 interface StatCardProps {
     title: string;
@@ -69,24 +34,20 @@ function StatCard({ title, value, icon, color = '#ffc107' }: StatCardProps) {
 
 export function DashboardPage() {
     const navigate = useNavigate();
-    const [videos, setVideos] = useState<VVideoInfoModel[]>([]);
-    const [tags, setTags] = useState<VTagModel[]>([]);
+    const [videos, setVideos] = useState<VideoInfo[]>([]);
+    const [tags, setTags] = useState<VideoTagWithStats[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        loadData();
-    }, []);
-
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         setLoading(true);
         try {
             // 并行加载视频和标签数据
             const [videosResult, tagsResult] = await Promise.all([
-                post<{ success: boolean; data?: VideoListResponse }>(
+                apiClient.post<ApiResponse<VideoListResponse>>(
                     '/api/Bilibili/QueryVideoList',
-                    { page:1, pageSize: 50 }
+                    { page: 1, pageSize: 50 }
                 ),
-                post<{ success: boolean; data?: VTagModel[] }>('/api/Tags/GetTagList'),
+                apiClient.post<ApiResponse<VideoTagWithStats[]>>('/api/Tags/GetTagList'),
             ]);
 
             if (videosResult.success && videosResult.data) {
@@ -96,25 +57,23 @@ export function DashboardPage() {
                 setTags(tagsResult.data);
             }
         } catch (error) {
-            console.error('加载数据失败:', error);
+            if (import.meta.env.DEV) {
+                console.error('加载数据失败:', error);
+            }
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
 
     // 统计数据
     const totalVideos = videos.length;
     const totalTags = tags.length;
     const totalViews = videos.reduce((sum, v) => sum + v.viewCount, 0);
     const totalLikes = videos.reduce((sum, v) => sum + v.likeCount, 0);
-
-    // 格式化数字
-    const formatNumber = (num: number): string => {
-        if (num >= 10000) {
-            return `${(num / 10000).toFixed(1)}万`;
-        }
-        return num.toString();
-    };
 
     return (
         <div className="admin-dashboard">
@@ -139,13 +98,13 @@ export function DashboardPage() {
                 />
                 <StatCard
                     title="总播放量"
-                    value={loading ? '...' : formatNumber(totalViews)}
+                    value={loading ? '...' : formatCount(totalViews)}
                     icon="◎"
                     color="#4caf50"
                 />
                 <StatCard
                     title="总点赞数"
-                    value={loading ? '...' : formatNumber(totalLikes)}
+                    value={loading ? '...' : formatCount(totalLikes)}
                     icon="♡"
                     color="#f44336"
                 />
@@ -183,7 +142,7 @@ export function DashboardPage() {
                     ) : videos.length === 0 ? (
                         <div className="empty-state">暂无视频</div>
                     ) : (
-                        videos.slice(0,5).map(video => (
+                        videos.slice(0, 5).map(video => (
                             <div key={video.id} className="recent-item">
                                 <img
                                     src={video.cover}
@@ -195,7 +154,7 @@ export function DashboardPage() {
                                     <div className="recent-title">{video.title}</div>
                                     <div className="recent-meta">
                                         <span>{video.ownerName}</span>
-                                        <span>▶ {formatNumber(video.viewCount)}</span>
+                                        <span>▶ {formatCount(video.viewCount)}</span>
                                     </div>
                                 </div>
                             </div>

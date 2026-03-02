@@ -6,8 +6,13 @@ import { useState, useMemo } from 'react';
 import rawData from '../data/matrix_data.json';
 import type { AppData, LocationStat, LocationKey, WeaponData } from '../types';
 import { LOCATION_MAP, STAR_WEIGHT, getStarMode } from '../constants';
+import { isAppData } from '../utils/validation';
 
-const appData = rawData as unknown as AppData;
+// 运行时验证数据结构
+if (!isAppData(rawData)) {
+    throw new Error('matrix_data.json 数据结构无效');
+}
+const appData = rawData as AppData;
 const weaponItems = appData.items;
 
 export function MatrixTool() {

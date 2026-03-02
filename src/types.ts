@@ -85,3 +85,76 @@ export interface VideoData {
     categories: string[];
     items: VideoItem[];
 }
+
+// ============================================
+// API 相关类型定义
+// ============================================
+
+/**
+ * API 响应基础结构
+ */
+export interface ApiResponse<T = unknown> {
+    success: boolean;
+    message?: string | null;
+    data?: T;
+    code?: number;
+}
+
+/**
+ * 视频标签（简化版）
+ */
+export interface VideoTag {
+    id: number;
+    name: string;
+    code: string;
+}
+
+/**
+ * 视频标签（完整版，含统计）
+ */
+export interface VideoTagWithStats {
+    id: number;
+    name: string;
+    code: string;
+    description?: string;
+    sortOrder: number;
+    videoCount: number;
+}
+
+/**
+ * 视频信息（与后端 API 对应）
+ */
+export interface VideoInfo {
+    id: number;
+    bvid: string;
+    title: string;
+    cover: string;
+    description?: string;
+    duration: number;
+    ownerName: string;
+    url: string;
+    viewCount: number;
+    likeCount: number;
+    publishTime: string;
+    tags: VideoTag[];
+}
+
+/**
+ * 视频列表响应
+ */
+export interface VideoListResponse {
+    total: number;
+    page: number;
+    pageSize: number;
+    rows: VideoInfo[];
+}
+
+/**
+ * 用户信息
+ */
+export interface UserInfo {
+    id: number;
+    username: string;
+    nickname?: string;
+    email?: string;
+}

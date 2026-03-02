@@ -10,6 +10,8 @@ import { Sidebar } from './components/Sidebar';
 import { MobileNav } from './components/MobileNav';
 import { LoadingScreen } from './components/LoadingScreen';
 import { ContourBackground } from './components/ContourBackground';
+import { ToastContainer, ConfirmDialog } from './components/Notification';
+import { NotificationProvider } from './contexts/NotificationContext';
 
 // 页面组件
 import { MatrixTool } from './pages/MatrixTool';
@@ -73,7 +75,7 @@ function App() {
     };
 
     return (
-        <>
+        <NotificationProvider>
             {/* 加载遮罩层 */}
             {!loadingDone && (
                 <LoadingScreen onComplete={handleLoadingComplete} minDuration={2500} />
@@ -110,7 +112,11 @@ function App() {
                     {renderPage()}
                 </main>
             </div>
-        </>
+
+            {/* 通知组件 */}
+            <ToastContainer />
+            <ConfirmDialog />
+        </NotificationProvider>
     );
 }
 
